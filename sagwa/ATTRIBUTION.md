@@ -4,7 +4,7 @@ This document records the provenance, licensing, and credit attribution for all 
 
 ---
 
-## 🎨 Visual Assets & Character Artwork
+## Visual Assets & Character Artwork
 
 - **Sagwa Character Reference**: The visual identity of Sagwa is based on original character reference designs.
 - **Pose Atlas (`generated/atlas.png`)**: Generated using reference images with transparent alpha channels, composed against pure black (`#000000`) for the CoreS3 LCD screen. Character poses are standardized at 136×136 pixels without cropping ear tips or white fur contours.
@@ -15,7 +15,7 @@ This document records the provenance, licensing, and credit attribution for all 
 
 ---
 
-## 🎬 Animation Pipeline & Video Clips
+## Animation Pipeline & Video Clips
 
 - **Hub Poses (`hubs/`)**: Six key poses cropped from `higgsfield-v1/atlas-original.png`:
   - `sleep.png`, `wake.png` (loaf), `listen.png` (sit), `idle.png` (stand), `work.png` (stalk), and `stretch.png`.
@@ -28,7 +28,7 @@ This document records the provenance, licensing, and credit attribution for all 
 
 ---
 
-## 🔊 Audio & Feline Vocalizations
+## Audio & Feline Vocalizations
 
 - **Purring (`purr-original.ogg`)**:
   - Author: **Peter Hull**
@@ -45,7 +45,7 @@ This document records the provenance, licensing, and credit attribution for all 
 
 ---
 
-## 🔤 Typography
+## Typography
 
 - **Inter Font Family**:
   - Author: **Rasmus Andersson** ([Inter Repository](https://github.com/rsms/inter))
@@ -54,7 +54,7 @@ This document records the provenance, licensing, and credit attribution for all 
 
 ---
 
-## 🤖 Voice Synthesis References
+## Voice Synthesis References
 
 - **Kokoro-82M**:
   - Author: **hexgrad** ([HuggingFace Repository](https://huggingface.co/hexgrad/Kokoro-82M))
@@ -66,7 +66,7 @@ This document records the provenance, licensing, and credit attribution for all 
 
 ---
 
-## 💻 Firmware & SDK
+## Firmware & SDK
 
 - **Base Framework**:
   - Derived from the **Muse Gadgets SDK** by Meta Platforms, Inc.

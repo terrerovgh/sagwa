@@ -4,7 +4,7 @@ This document outlines the hardware architecture, peripheral mappings, and regis
 
 ---
 
-## 🛠️ Hardware Overview
+## Hardware Overview
 
 The M5Stack CoreS3 is a modular ESP32-S3 development kit equipped with rich multimedia, sensing, and power management capabilities.
 
@@ -26,7 +26,7 @@ The M5Stack CoreS3 is a modular ESP32-S3 development kit equipped with rich mult
 
 ---
 
-## 🔌 Pinout & Bus Allocation
+## Pinout & Bus Allocation
 
 ### SPI Interface (Display & Camera)
 - **LCD CS**: GPIO 3
@@ -64,7 +64,7 @@ Devices sharing the I2C0 bus:
 
 ---
 
-## 🐾 Sensor Behavior in Sagwa
+## Sensor Behavior in Sagwa
 
 ### 1. LTR-553ALS-WA (Proximity Petting & Light)
 - **Proximity Petting**:
@@ -73,7 +73,7 @@ Devices sharing the I2C0 bus:
   - State reaction: If asleep, Sagwa wakes up; calls `muse_state_make_happy()`, and triggers `sagwa_sfx_pet_pulse()` to emit a continuous purring sound.
 - **Dynamic Backlight Scaling**:
   - Measures ambient illuminance in lux.
-  - An exponential smoothing filter adjusts the LCD backlight via AXP2101 ($20\% - 100\%$) to match ambient ambient room lighting.
+  - An exponential smoothing filter adjusts the LCD backlight via AXP2101 ($20\% - 100\%$) to match ambient room lighting.
 
 ### 2. BMI270 (IMU Motion Wake & Rotation)
 - **Motion Wake**:
@@ -89,7 +89,7 @@ Devices sharing the I2C0 bus:
 
 ---
 
-## ⚡ Power Management & Battery
+## Power Management & Battery
 
 - **AXP2101 PMIC Configuration**:
   - Handled by the Board Support Package (`board_m5stack_cores3.c`).

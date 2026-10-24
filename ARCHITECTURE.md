@@ -4,7 +4,7 @@ This document provides a comprehensive technical overview of the software archit
 
 ---
 
-## 🏛️ System Architecture
+## System Architecture
 
 ```mermaid
 flowchart TD
@@ -44,7 +44,7 @@ flowchart TD
 
 ---
 
-## 💾 Flash Partition Geometry (16 MB SPI Flash)
+## Flash Partition Geometry (16 MB SPI Flash)
 
 The firmware utilizes a custom 16 MB partition layout defined in `partitions_muse_cores3.csv`:
 
@@ -63,7 +63,7 @@ The firmware utilizes a custom 16 MB partition layout defined in `partitions_mus
 
 ---
 
-## 🎬 Animation Engine (`sagwa_clips.c`)
+## Animation Engine (`sagwa_clips.c`)
 
 ### 1. Hub Poses & Clip Graph Topology
 The animation system is modeled as a directed graph over six canonical **Hub Poses**:
@@ -159,7 +159,7 @@ Data:
 
 ---
 
-## 🔊 Feline Sound Engine (`sagwa_sfx.c`)
+## Feline Sound Engine (`sagwa_sfx.c`)
 
 - **Format**: 16 kHz, 16-bit mono PCM.
 - **Buffer Processing**: Processes audio in 20 ms chunks (320 samples per frame) directly in `sagwa_sfx_step()`.
@@ -174,7 +174,7 @@ Data:
 
 ---
 
-## 📡 Sensor Integration (`cores3_sensors.c`)
+## Sensor Integration (`cores3_sensors.c`)
 
 The sensor subsystem runs as a dedicated FreeRTOS task on Core 1:
 
@@ -200,7 +200,7 @@ The sensor subsystem runs as a dedicated FreeRTOS task on Core 1:
 
 ---
 
-## 📊 Activity Tracking & Stats (`sagwa_stats.c`)
+## Activity Tracking & Stats (`sagwa_stats.c`)
 
 Tracks Sagwa's daily activities in Non-Volatile Storage (NVS):
 - Daily wakeup count (motion + touch)

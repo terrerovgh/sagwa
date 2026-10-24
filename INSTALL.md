@@ -4,7 +4,7 @@ This guide provides simple, step-by-step instructions to install and run **Sagwa
 
 ---
 
-## ⚡ Method 1: 1-Minute Quick Flash (Recommended)
+## Method 1: 1-Minute Quick Flash (Recommended)
 
 No compiler or ESP-IDF setup is required! Pre-built, verified binaries are included in the repository inside `bin/`.
 
@@ -41,7 +41,7 @@ python3 flash.py
 
 ---
 
-## 🔧 Method 2: Manual Flashing with `esptool`
+## Method 2: Manual Flashing with `esptool`
 
 If you prefer to flash using standard command-line tools:
 
@@ -75,7 +75,7 @@ python3 -m esptool --chip esp32s3 -p <PORT> -b 1500000 write_flash 0x020000 bin/
 
 ---
 
-## 🛠️ Method 3: Building from Source
+## Method 3: Building from Source
 
 For developers who want to modify firmware, sensor logic, or the UI.
 
@@ -117,7 +117,7 @@ This writes the freshly packed `sagwa_clips.bin` directly into the firmware avat
 
 ---
 
-## 🔍 Troubleshooting & FAQ
+## Troubleshooting & FAQ
 
 ### Board Not Detected / No Serial Port Appears
 - **Data Cable Check**: Ensure your USB-C cable supports data transfer and is not a charging-only cable.

@@ -121,13 +121,13 @@ def main():
     args = parser.parse_args()
 
     print("=" * 64)
-    print(" 🐾  Sagwa M5Stack CoreS3 Flasher")
+    print("  Sagwa M5Stack CoreS3 Flasher")
     print("=" * 64)
 
     # 1. Locate esptool
     esptool_cmd = find_esptool()
     if not esptool_cmd:
-        print("\n❌ Error: 'esptool' not found.")
+        print("\n[!] Error: 'esptool' not found.")
         print("\nPlease install esptool via pip:")
         print("    pip install esptool")
         print("\nOr activate your ESP-IDF environment:")
@@ -139,7 +139,7 @@ def main():
     if not port:
         ports = detect_serial_ports()
         if not ports:
-            print("\n❌ No serial ports found. Please connect your M5Stack CoreS3 via USB-C.")
+            print("\n[!] Error: No serial ports found. Please connect your M5Stack CoreS3 via USB-C.")
             sys.exit(1)
         elif len(ports) == 1:
             port = ports[0][0]
@@ -168,7 +168,7 @@ def main():
     # 3. Check binary files
     bin_dir = os.path.abspath(args.bin_dir)
     if not os.path.isdir(bin_dir):
-        print(f"\n❌ Error: Binary directory not found at: {bin_dir}")
+        print(f"\n[!] Error: Binary directory not found at: {bin_dir}")
         sys.exit(1)
 
     flash_list = []
@@ -189,7 +189,7 @@ def main():
             print(f"  - [0x{offset:06X}] {filename:22} ({size_kb:7.1f} KB) - {desc}")
 
     if missing:
-        print(f"\n❌ Missing required binary files in {bin_dir}:")
+        print(f"\n[!] Error: Missing required binary files in {bin_dir}:")
         for m in missing:
             print(f"    - {m}")
         sys.exit(1)
@@ -200,7 +200,7 @@ def main():
         erase_cmd = esptool_cmd + ["--chip", "esp32s3", "-p", port, "-b", args.baud, "erase_flash"]
         res = subprocess.run(erase_cmd)
         if res.returncode != 0:
-            print("❌ Erase failed.")
+            print("[!] Error: Erase failed.")
             sys.exit(1)
 
     # 5. Build write_flash command
@@ -225,12 +225,12 @@ def main():
 
     if res.returncode == 0:
         print("\n" + "=" * 64)
-        print(" ✨ SUCCESS: Sagwa is installed!")
+        print(" SUCCESS: Sagwa is installed!")
         print(" The CoreS3 will reboot automatically.")
         print(" Watch Sagwa wake up, stretch, and greet you on the screen!")
         print("=" * 64)
     else:
-        print("\n❌ Flashing failed with return code:", res.returncode)
+        print("\n[!] Error: Flashing failed with return code:", res.returncode)
         print("Troubleshooting tips:")
         print("  1. Verify the USB-C cable supports data (not charge-only).")
         print("  2. If the board fails to enter download mode, hold the reset button")

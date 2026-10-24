@@ -1,4 +1,4 @@
-# 🐾 Sagwa — Interactive Desktop Feline Companion for M5Stack CoreS3
+# Sagwa — Interactive Desktop Feline Companion for M5Stack CoreS3
 
 [![Target](https://img.shields.io/badge/Target-ESP32--S3-blue.svg)](https://www.espressif.com/en/products/socs/esp32-s3)
 [![Framework](https://img.shields.io/badge/ESP--IDF-v6.0.1-red.svg)](https://docs.espressif.com/projects/esp-idf/en/v6.0.1/)
@@ -12,26 +12,26 @@ Combining real-time video animation graph playback, reactive feline acoustic voc
 
 ---
 
-## ✨ Features
+## Features
 
-- 🐱 **Real-Time Video Animation Graph**:
+- **Real-Time Video Animation Graph**:
   Plays a directed graph of 22 video clips (MiniMax H3) seamlessly transitioning across 6 hub poses (*Sleep, Loaf, Sit, Stand, Stalk, Stretch*). Decoded on Core 0 via the ESP32-S3 ROM's hardware `TJpgDec` at 12 fps with zero cross-dissolves.
-- 🐾 **Natural Feline Acoustic Engine (SFX)**:
+- **Natural Feline Acoustic Engine (SFX)**:
   Dedicated 16 kHz 16-bit PCM sound engine (`sagwa_sfx.c`) capable of playing realistic meows, trills, startled chirps, and continuous rhythmic purring.
-- ✋ **Interactive Proximity Petting**:
+- **Interactive Proximity Petting**:
   Holding your hand near the CoreS3's built-in LTR-553 proximity sensor initiates a petting response: Sagwa wakes up, makes a happy expression, and emits a soothing purr.
-- ⏰ **Motion-Aware Wake**:
+- **Motion-Aware Wake**:
   Onboard Bosch Sensortec BMI270 6-axis IMU detects taps, movement, or sustained rotation ($>40^\circ/\text{s}$) to wake Sagwa from deep sleep with an animated stretch sequence.
-- 📊 **Daily Activity Tracking (NVS Persistence)**:
+- **Daily Activity Tracking (NVS Persistence)**:
   Maintains persistent daily records in flash memory of Sagwa's wakeups, purr durations, meow counts, and device uptime, accessible from the settings dashboard.
-- 💬 **Interactive Touch UI (LVGL)**:
+- **Interactive Touch UI (LVGL)**:
   Features finger-scrollable chat reply bubbles, instant image thumbnail rendering for AI-generated images, live sensor telemetry gauges, and Wi-Fi/audio settings.
-- 🔐 **Encrypted Assistant Protocol**:
+- **Encrypted Assistant Protocol**:
   Built on the Muse Home Link architecture, supporting encrypted Noise sessions over BLE and Wi-Fi to integrate with voice assistants and LLM agents.
 
 ---
 
-## ⚡ Quick Start: Flash Sagwa in 1 Minute
+## Quick Start: Flash Sagwa in 1 Minute
 
 No development environment or compilation is needed! Pre-built, verified firmware binaries are included in the repository inside `bin/`.
 
@@ -60,7 +60,7 @@ The script automatically detects the serial port, flashes all 5 binary partition
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 sagwa/
@@ -96,7 +96,7 @@ sagwa/
 
 ---
 
-## 🛠️ Building from Source
+## Building from Source
 
 If you want to modify the firmware or sensor behaviors:
 
@@ -120,7 +120,7 @@ tools/muse/board.sh flash cores3
 
 ---
 
-## 🎨 Asset Pipeline: Packaging Clips
+## Asset Pipeline: Packaging Clips
 
 Sagwa uses 22 transition clips rendered between 6 shared poses. If you create new clips or edit hub frames:
 
@@ -136,7 +136,7 @@ This tool:
 
 ---
 
-## 📖 In-Depth Documentation
+## In-Depth Documentation
 
 - [Hardware Reference (`HARDWARE.md`)](HARDWARE.md) — Pinouts, I2C bus devices, power rails, and sensor thresholds.
 - [Firmware Architecture (`ARCHITECTURE.md`)](ARCHITECTURE.md) — State machine graph, ROM TJpgDec decoder, audio pipeline, and flash layout.
@@ -145,7 +145,7 @@ This tool:
 
 ---
 
-## 📜 License
+## License
 
 - **Firmware & Code**: Licensed under the [Apache License 2.0](LICENSE).
 - **Art, Sound & Typography**: Licensed under CC BY 4.0, CC BY-SA 4.0, CC BY-SA 3.0, and SIL Open Font License 1.1. Full details in [ATTRIBUTION.md](ATTRIBUTION.md).
