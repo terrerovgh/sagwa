@@ -1,0 +1,49 @@
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Build artifacts and caches
+build/
+build-*/
+**/build/
+**/build-*/
+**/managed_components/
+**/dependencies.lock
+**/tmp/
+*.o
+*.a
+*.d
+*.log
+logs.logs
+
+# ESP-IDF configurations generated at build time
+**/sdkconfig
+**/sdkconfig.old
+eim_config.toml
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+ENV/
+
+# Security and Keys (never commit signing keys)
+release_signing_key.pem
+factory_test_signing_key.pem
+
+# IDE and Editor configurations
+.vscode/
+.idea/
+*.swp
+*~
+
+# AI agent instructions
+.claude/
+CLAUDE.md
+*AGENTS.md
+avatar_prompt.md
+.gemini/
+.cursor/

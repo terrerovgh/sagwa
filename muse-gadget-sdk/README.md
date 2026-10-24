@@ -1,0 +1,92 @@
+<!--
+Copyright (c) Meta Platforms, Inc. and affiliates.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+# Muse Gadgets
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/images/muse-gadgets-dark.png">
+    <img src=".github/images/muse-gadgets-light.png" width="900" alt="Muse gadgets: a Waveshare round AMOLED, an M5Stack StickS3, Muse Home Link, a Raspberry Pi and a Seeed reTerminal e-ink display">
+  </picture>
+</p>
+
+Muse gadgets are open source devices you build yourself. Program an
+off-the-shelf ESP32 board or set up a Raspberry Pi with our device SDKs, then
+connect Muse to your displays, buttons, sensors, actuators, and whatever else
+you've got lying on your workbench.
+
+We open sourced the SDKs and firmware here. It's built by hackers, for hackers,
+just for fun. Side effects of tinkering may include bricked boards, voided
+warranties, brownouts, or bankruptcies. Proceed at your own risk!
+
+| | |
+|---|---|
+| [**ESP32 Device SDK**](esp32) | Connect your ESP32 board to Muse through our open source SDK. Throw in a screen to show images, add audio in and out, or wire up other sensors. |
+| [**Linux Device SDK**](linux) | Turn that spare Raspberry Pi or Linux box into a Muse gadget. Hack in your own commands to let Muse handle sysadmin chores or your Home Assistant setup. |
+| [**Muse Gadgets Test**](android/musegadgetstest) ([iPhone](ios/musegadgetstest)) | Stream your phone's camera, or a clip, to an ESP32 gadget's screen over Wi-Fi: H.264 or VP8 decoded on the board, 30 fps on the round 466 px boards. [`protocols/VIDEO.md`](protocols/VIDEO.md) explains how. |
+
+Before you flash or pair a gadget, get an
+[SDK token](https://gadgets.muse.ai/settings/sdk-tokens) and review the
+[Gadget SDK Terms](https://gadgets.muse.ai/sdk-terms). Every gadget needs a
+token to pair.
+
+ESP32 and Linux gadgets pair with the Muse app on iOS and Android, via
+Settings > Devices. Turn on Developer mode there first, then look for devices
+prefixed with "MuseGadget".
+Each directory has a `README.md` with instructions to get started.
+
+For battery-input power profiling, see the [porting recipe](esp32/docs/power/README.md).
+The opt-in diagnostic core is board-neutral; boards supply its hooks and state
+matrices, and [power_sweep.py](esp32/tools/power/power_sweep.py) drives the
+USB-free sweep. The isolated diagnostic does not pair or need an SDK token;
+fixture safety and explicit hardware authorization still come first, as the
+[PPK2 rules](esp32/docs/power/ppk2.md) describe.
+
+## Community
+
+Meet other hackers who are building and customizing Muse gadgets in our
+community [Discord](https://discord.gg/3bhjCkZdd6). Get inspired, support each
+other, and share what you make.
+
+## License
+
+Muse Gadgets is licensed under the Apache License, Version 2.0, found in
+[`LICENSE`](LICENSE), except for these third-party files, which keep their
+upstream licenses:
+
+| Path | Upstream | License |
+|---|---|---|
+| [`esp32/components/minimp3/include/minimp3.h`](esp32/components/minimp3) | [lieff/minimp3](https://github.com/lieff/minimp3) | CC0-1.0, see [`LICENSE`](esp32/components/minimp3/LICENSE) |
+| [`esp32/components/muse/boards/ostb_echoear_display_init.h`](esp32/components/muse/boards/ostb_echoear_display_init.h) | [78/xiaozhi-esp32 ESP-VoCat panel sequence](https://github.com/78/xiaozhi-esp32/blob/0d576d3d4c049c6f55eaf879725dc23e516511b4/main/boards/espressif/esp-vocat/esp_vocat.cc) | MIT, retained in the file header |
+| [`esp32/main/pixel_font.c`](esp32/main/pixel_font.c) | Adafruit GFX `glcdfont.c` | BSD-2-Clause, in the file header |
+| [`esp32/main/epd_ssd1677.c`](esp32/main/epd_ssd1677.c) | Seeed-reTerminal-E10xx-Firmware's SSD1677 refresh sequence | MIT, retained in the file header |
+| [`esp32/components/tinyh264/src`](esp32/components/tinyh264) | the Android Open Source Project's H.264 decoder, via [udevbe/tinyh264](https://github.com/udevbe/tinyh264) | Apache-2.0, AOSP's copyright, see [`LICENSE`](esp32/components/tinyh264/LICENSE) |
+| [`esp32/components/libvpx_vp8/src`](esp32/components/libvpx_vp8) | [libvpx](https://chromium.googlesource.com/webm/libvpx) v1.16.0's VP8 decoder, trimmed | BSD-3-Clause, the WebM Project authors' copyright, see [`LICENSE`](esp32/components/libvpx_vp8/LICENSE), with Google's patent grant in [`PATENTS`](esp32/components/libvpx_vp8/PATENTS) |
+
+Dependencies fetched at build time are under their own licenses: ESP-IDF
+components (into `esp32/managed_components/`), and the simulator's LVGL and
+SDL (listed in [`esp32/simulator/THIRD_PARTY.md`](esp32/simulator/THIRD_PARTY.md)).
+
+The Apache License does not cover the [Jollybot avatar](esp32/avatar).
+
+Muse Gadgets Test's sample clips aren't in this repository: the app fetches a few
+seconds of the Blender Foundation's open movies (CC BY 3.0) when one is
+played, and shows their credits.
+
+Muse Gadgets Test can use x264 (GPL-2.0) on the phone; this repository carries none
+of its code. An APK or iPhone app you build with it is under the GPL
+([`android/musegadgetstest/README.md`](android/musegadgetstest/README.md),
+[`ios/musegadgetstest/README.md`](ios/musegadgetstest/README.md)).
