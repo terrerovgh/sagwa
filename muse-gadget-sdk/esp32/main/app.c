@@ -84,6 +84,7 @@
 #endif
 #if CONFIG_MUSE_ENABLED
 #include "muse_glue.h"
+#include "sagwa_update.h"
 #include "muse_input.h"
 // Muse joins Wi-Fi from its own settings, before or without pairing.
 #define WIFI_WITHOUT_PAIRING 1
@@ -2518,14 +2519,17 @@ static void on_ws_control_status(const char *status) {
 // so the running slot becomes a valid rollback target for the *next* OTA.
 // We gate validation on the control WS coming up: that's the channel a future
 // device.ota would arrive on, so if the new image can't reach it, reverting is
-// the only way to keep the device recoverable.
+// the only way to keep the device recoverable. Sagwa's own updates come from
+// GitHub instead (sagwa_update.c): reaching it and reading the release manifest
+// proves that path works just as well.
 static void ota_verify_task(void *arg) {
     (void)arg;
     int64_t deadline = esp_timer_get_time() + OTA_VERIFY_TIMEOUT_US;
     while (esp_timer_get_time() < deadline) {
-        if (noise_ctrl_is_connected()) {
+        if (noise_ctrl_is_connected() || sagwa_update_healthy()) {
             if (esp_ota_mark_app_valid_cancel_rollback() == ESP_OK) {
-                ESP_LOGI(TAG, "OTA image validated (control WS up)");
+                ESP_LOGI(TAG, "OTA image validated (%s)",
+                         noise_ctrl_is_connected() ? "control WS up" : "update manifest reached");
                 ota_verify_forget();
             } else {
                 ESP_LOGE(TAG, "esp_ota_mark_app_valid_cancel_rollback failed");
@@ -2887,6 +2891,7 @@ void app_run(void) {
 #if CONFIG_MUSE_ENABLED
     muse_glue_link_ready();
 #endif
+    sagwa_update_start();
 
     // Heartbeat: log full state every 5 s so we can tell where we're stuck.
     stack_monitor_t stack = STACK_MONITOR_INIT;

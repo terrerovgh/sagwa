@@ -47,3 +47,6 @@ CLAUDE.md
 avatar_prompt.md
 .gemini/
 .cursor/
+
+# Release assets gathered by sagwa/tools/make_release.py
+dist/

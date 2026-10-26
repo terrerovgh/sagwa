@@ -233,6 +233,7 @@ static void ota_task(void *arg) {
         .timeout_ms = OTA_HTTP_TIMEOUT_MS,
         .keep_alive_enable = true,
         .max_redirection_count = OTA_MAX_REDIRECTS,
+        .buffer_size = OTA_HTTP_TX_BUFFER_BYTES,   // long redirect headers (GitHub release assets)
         .buffer_size_tx = OTA_HTTP_TX_BUFFER_BYTES,
         .event_handler = ota_http_event_handler,
         .user_data = (void *)"ota download",

@@ -17,7 +17,13 @@ Combining real-time video animation graph playback, reactive feline acoustic voc
 - **Real-Time Video Animation Graph**:
   Plays a directed graph of 22 video clips (MiniMax H3) seamlessly transitioning across 6 hub poses (*Sleep, Loaf, Sit, Stand, Stalk, Stretch*). Decoded on Core 0 via the ESP32-S3 ROM's hardware `TJpgDec` at 12 fps with zero cross-dissolves.
 - **Natural Feline Acoustic Engine (SFX)**:
-  Dedicated 16 kHz 16-bit PCM sound engine (`sagwa_sfx.c`) capable of playing realistic meows, trills, startled chirps, and continuous rhythmic purring.
+  Dedicated 16 kHz 16-bit PCM sound engine (`sagwa_sfx.c`) playing real cat recordings: meows, trills, chirps, yawns, hisses, hunting chatter and continuous rhythmic purring. Each kind of sound has several takes with a slight random pitch, so she never sounds exactly the same twice.
+- **A Different Meow for Every Kind of Message**:
+  Sagwa reads each message before she announces it (`sagwa_notify.c`): a soft *mrrow* when you are chatting with her, a short bright chirp for an ordinary notification, and a loud insistent double meow for something important ("urgente", "recordatorio", "!!"...), repeated until you notice her.
+- **Lifelike Moods and Decisions**:
+  Energy, sleepiness (the clock and the room light), boredom and contentment drive what she does on her own: when she naps, sits, stretches, plays in bouts, grooms or calls out. She avoids repeating herself, wakes when the lights go on, jumps at a sudden hand, and keeps her balance on a tilted desk.
+- **Updates Herself from GitHub**:
+  Every push to `main` is built and released by GitHub Actions. Sagwa checks for new releases, tells you on screen before she updates (touch her to wait), installs the firmware and new animations, and tells you when she is done.
 - **Interactive Proximity Petting**:
   Holding your hand near the CoreS3's built-in LTR-553 proximity sensor initiates a petting response: Sagwa wakes up, makes a happy expression, and emits a soothing purr.
 - **Motion-Aware Wake**:
@@ -133,6 +139,18 @@ This tool:
 2. Downsamples video to 12 fps.
 3. Smoothly blends boundary frames with exact hub poses.
 4. Generates baseline JPEGs at $240 \times 208$ pixels into `sagwa_clips.bin` ready for the flash partition at `0x830000`.
+
+---
+
+## Automatic Updates
+
+Sagwa keeps herself up to date from this repository's [releases](https://github.com/terrerovgh/sagwa/releases):
+
+1. Push to `main`. The **Sagwa release** workflow (`.github/workflows/release.yml`) builds and signs the firmware as `v1.0.<run>`, and publishes it with the animation pack and a `manifest.json`.
+2. Within a few hours (every 3 h by default), Sagwa sees the new release. Once nobody is talking with her, she chirps and shows *"Hay una version nueva de mi..."* with a 30-second countdown. Touch her to put it off for 10 minutes.
+3. She downloads and verifies the update, restarts, and greets you with a happy trill: *"Ya me actualice! v1.0.4 -> v1.0.5"*.
+
+The firmware already on your board must include the updater, so flash it once by hand (`./flash.sh`) after pulling this change. Options (time zone, check interval, turning it off) are in [INSTALL.md](INSTALL.md#automatic-updates).
 
 ---
 

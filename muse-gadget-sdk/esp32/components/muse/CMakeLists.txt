@@ -43,6 +43,7 @@ if(CONFIG_MUSE_ENABLED)
         "muse_link.c"
         "muse_ble.c"
         "sagwa_sfx.c"
+        "sagwa_notify.c"
         "muse_thumbs.c"
         "sagwa_stats.c"
         "cores3_sensors.c")

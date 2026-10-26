@@ -1,0 +1,101 @@
+# Every push to main builds Sagwa's CoreS3 firmware and publishes it as a
+# GitHub release (v1.0.<run number>) with sagwa-cores3.bin, sagwa_clips.bin
+# and manifest.json. Sagwa checks the latest release herself and updates
+# (muse-gadget-sdk/esp32/main/sagwa_update.c). The new binaries are also
+# committed to bin/ so flash.py always flashes the latest.
+
+name: Sagwa release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "bin/**"
+      - ".github/images/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sagwa-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    container: espressif/idf:v6.0.1
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Version
+        id: version
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          v="1.0.${{ github.run_number }}"
+          echo "$v" > muse-gadget-sdk/esp32/version.txt
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          git log -1 --format=%s > /tmp/notes.txt
+
+      # The installed firmware only accepts updates signed with the key it was
+      # built with: the SAGWA_SIGNING_KEY secret if you set one (and flashed a
+      # build made with it), else the repository's development key.
+      - name: Signing key
+        env:
+          SAGWA_SIGNING_KEY: ${{ secrets.SAGWA_SIGNING_KEY }}
+        run: |
+          if [ -n "$SAGWA_SIGNING_KEY" ]; then
+            printf '%s\n' "$SAGWA_SIGNING_KEY" > muse-gadget-sdk/esp32/dev_signing_key.pem
+          fi
+
+      - name: Repack the clips if they changed
+        run: |
+          before="${{ github.event.before }}"
+          if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ] &&
+             git diff --name-only "$before" "$GITHUB_SHA" | grep -qE '^sagwa/(clips|hubs)/|^sagwa/tools/pack_clips.py'; then
+            . "$IDF_PATH/export.sh" > /dev/null
+            python -m pip install -q pillow numpy imageio-ffmpeg
+            python sagwa/tools/pack_clips.py --out bin/sagwa_clips.bin
+            cp bin/sagwa_clips.bin muse-gadget-sdk/esp32/components/muse/avatar/sagwa_clips.bin
+          fi
+
+      - name: Build
+        working-directory: muse-gadget-sdk/esp32
+        run: |
+          . "$IDF_PATH/export.sh" > /dev/null
+          tools/muse/board.sh build cores3 || { tail -80 /tmp/muse_build_cores3.log; exit 1; }
+
+      - name: Gather the release
+        run: |
+          python3 sagwa/tools/make_release.py --version "${{ steps.version.outputs.version }}" \
+            --notes "$(cat /tmp/notes.txt)" --out dist
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Sagwa v${{ steps.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          body_path: /tmp/notes.txt
+          make_latest: true
+          files: |
+            dist/manifest.json
+            dist/sagwa-cores3.bin
+            dist/sagwa_clips.bin
+
+      - name: Commit the binaries to bin/
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bin/ muse-gadget-sdk/esp32/components/muse/avatar/sagwa_clips.bin
+          if ! git diff --cached --quiet; then
+            git commit -m "Release v${{ steps.version.outputs.version }} binaries [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi

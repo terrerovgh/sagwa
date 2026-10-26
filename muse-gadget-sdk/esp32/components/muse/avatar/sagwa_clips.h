@@ -20,3 +20,7 @@ void sagwa_clips_scale(uint16_t *dst, int stride_px, int x0, int x1, int y0, int
 int sagwa_clips_get_rig(void);
 int sagwa_clips_offset_x(void);
 void sagwa_clips_activity(char *out, size_t cap);
+
+/* Stops reading the pack for good (until restart): before the sagwa partition
+ * is rewritten by an update. The last frame stays on screen. */
+void sagwa_clips_suspend(void);

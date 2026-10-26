@@ -117,6 +117,22 @@ This writes the freshly packed `sagwa_clips.bin` directly into the firmware avat
 
 ---
 
+## Automatic Updates
+
+Sagwa updates herself from GitHub releases (see [ARCHITECTURE.md](ARCHITECTURE.md#self-update-from-github-mainsagwa_updatec)):
+
+- **First time**: flash a build that contains the updater (`./flash.sh` with the current `bin/`, or `tools/muse/board.sh flash cores3`). From then on she updates on her own over Wi-Fi.
+- **Publishing**: every push to `main` (except changes to Markdown files or `bin/`) runs the *Sagwa release* workflow. You can also run it by hand from the Actions tab. Edited clips (`sagwa/clips/`, `sagwa/hubs/`) are repacked automatically.
+- **Signing**: the board only accepts images signed with the key its firmware was built with. The workflow uses the repository's development key (`muse-gadget-sdk/esp32/dev_signing_key.pem`) unless you add your own as the `SAGWA_SIGNING_KEY` repository secret; if you do, flash one build made with that key by hand first.
+- **Settings** (`idf.py menuconfig`, *ESP32 Device SDK*):
+  - `CONFIG_SAGWA_AUTO_UPDATE`: turn self-updates off.
+  - `CONFIG_SAGWA_UPDATE_INTERVAL_MIN`: minutes between checks (default 180).
+  - `CONFIG_SAGWA_UPDATE_REPO`: the `owner/name` she updates from.
+  - `CONFIG_SAGWA_TZ`: your POSIX time zone, so her day and night follow your clock (default `UTC0`; for example `CST6CDT,M3.2.0,M11.1.0` or `CET-1CEST,M3.5.0,M10.5.0/3`).
+- **Sounds**: the cat sounds are generated from `sagwa/sounds/` with `python3 sagwa/tools/make_sfx.py` (needs `numpy` and `imageio-ffmpeg`); add `--wav DIR` to listen to every take.
+
+---
+
 ## Troubleshooting & FAQ
 
 ### Board Not Detected / No Serial Port Appears

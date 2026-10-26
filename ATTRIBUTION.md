@@ -41,6 +41,16 @@ This document records the provenance, licensing, and credit attribution for all 
   - License: [Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)](https://creativecommons.org/licenses/by-sa/3.0/)
   - Derivative (`meow.pcm`): A 0.8-second vocalization converted to 16 kHz 16-bit mono PCM with attenuation and soft fades. This adaptation is distributed under CC BY-SA 3.0.
 
+- **Real cat recordings (`sagwa/sounds/cc0/`)**, all from Wikimedia Commons, cut, pitch-shifted, filtered and normalised into `sagwa_sfx_data.h` by `sagwa/tools/make_sfx.py`:
+  - `greek-touch-mrrp.flac`: [2015-11-24.νιαούρισμα.Νιάου.noise reduced.flac](https://commons.wikimedia.org/wiki/File:2015-11-24.νιαούρισμα.Νιάου.noise_reduced.flac) by **Tsester**, CC0 1.0. Used for: notification chirps, happy trill, hunting chatter.
+  - `black-cat-begging.flac`: [Black cat sound begging the foods.flac](https://commons.wikimedia.org/wiki/File:Black_cat_sound_begging_the_foods.flac) by **매일 누군가가 도둑맞을 때마다**, CC0 1.0. Used for: chat mrrows, notification chirp, happy trill, murmur.
+  - `young-female-meow.ogg`: [Maullido de gata hembra joven.ogg](https://commons.wikimedia.org/wiki/File:Maullido_de_gata_hembra_joven.ogg) by **George Miquilena**, CC0 1.0. Used for: startled mew.
+  - `female-meow.ogg`: [Maullido de gata hembra.ogg](https://commons.wikimedia.org/wiki/File:Maullido_de_gata_hembra.ogg) by **George Miquilena**, CC0 1.0. Used for: urgent meow, notification chirp.
+  - `siamese-meow.wav`: [Meow of a Siamese cat - freemaster2.wav](https://commons.wikimedia.org/wiki/File:Meow_of_a_Siamese_cat_-_freemaster2.wav) by **freemaster2**, CC0 1.0. Used for: urgent meow.
+  - `pleading-cat.oga`: [Meow of a pleading cat.oga](https://commons.wikimedia.org/wiki/File:Meow_of_a_pleading_cat.oga) by **Heismark**, Public domain. Used for: urgent meows, yawn.
+  - `hiss.wav`: [Cat hissing - Zabuhailo.wav](https://commons.wikimedia.org/wiki/File:Cat_hissing_-_Zabuhailo.wav) by **Zabuhailo**, CC0 1.0. Used for: startled hiss.
+  - The rising listen trill and one murmur take are kept from the earlier bank (`sagwa/sounds/legacy/`, derived from `meow-original.ogg`, CC BY-SA 3.0); the purr loop is unchanged (`purr-original.ogg`, CC BY-SA 4.0).
+
 *Note: These feline audio clips and derivatives are licensed under their respective CC licenses; incorporating them into the project does not impose CC BY-SA onto the underlying C/C++ firmware.*
 
 ---

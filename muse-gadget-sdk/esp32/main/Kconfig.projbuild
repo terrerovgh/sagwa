@@ -90,6 +90,38 @@ menu "ESP32 Device SDK"
             Optional OTA parameters in Wi-Fi setup are ignored so provisioning
             can finish normally. Internal builds enable this explicitly.
 
+    config SAGWA_AUTO_UPDATE
+        bool "Sagwa updates herself from GitHub releases"
+        depends on HOMEHUB_OTA_ENABLED && MUSE_ENABLED
+        default y if MUSE_BOARD_M5STACK_CORES3
+        help
+            Check the latest release of CONFIG_SAGWA_UPDATE_REPO now and then
+            (manifest.json, sagwa-cores3.bin, sagwa_clips.bin, published by
+            .github/workflows/release.yml). A newer firmware or a different clip
+            pack is installed once nobody is talking with Sagwa, after she has
+            said so on screen; she says again once it's done. See
+            main/sagwa_update.h.
+
+    config SAGWA_UPDATE_REPO
+        string "GitHub repository Sagwa updates from (owner/name)"
+        depends on SAGWA_AUTO_UPDATE
+        default "terrerovgh/sagwa"
+
+    config SAGWA_UPDATE_INTERVAL_MIN
+        int "Minutes between update checks"
+        depends on SAGWA_AUTO_UPDATE
+        range 2 10080
+        default 180
+
+    config SAGWA_TZ
+        string "Time zone for Sagwa's day (POSIX TZ)"
+        depends on SAGWA_AUTO_UPDATE
+        default "UTC0"
+        help
+            Her sleepiness follows the local time once SNTP has set the clock,
+            e.g. "CST6CDT,M3.2.0,M11.1.0" (US Central) or "CET-1CEST,M3.5.0,M10.5.0/3"
+            (Central Europe).
+
     config HOMEHUB_SUPPORT_BUG_REPORT
         bool "Enable private support bug reporting"
         default n

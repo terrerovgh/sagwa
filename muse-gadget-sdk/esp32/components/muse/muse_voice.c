@@ -37,6 +37,7 @@
 #include "muse_settings.h"
 #include "muse_state.h"
 #include "muse_wifi.h"
+#include "sagwa_notify.h"
 #include "sagwa_sfx.h"
 
 static const char *TAG = "muse_voice";
@@ -67,8 +68,14 @@ static const char *TAG = "muse_voice";
 #define RETRY_MAX_US (120LL * 1000000)
 #define STALL_US (30LL * 1000000)               /* Hatch took none of a note this long: give up */
 #define ACK_WAIT_US (30LL * 1000000)            /* asleep, waiting for the VM to have a note */
+#define ANNOUNCE_WAIT_US (1500LL * 1000)        /* an incoming message's sound waits this long for its text */
+#define THREAD_US (3LL * 60 * 1000000)          /* incoming messages this close are one conversation */
+#define URGENT_REPEATS 2                        /* an important message calls again until noticed... */
+#define URGENT_GAP_MS 20000                     /* ...this far apart */
 
 static QueueHandle_t s_queue;
+/* When you last talked with her, and when a message last came in by itself */
+static int64_t s_last_user_us, s_last_incoming_us;
 static volatile bool s_monitor;
 static volatile float s_monitor_db = -100.0f;
 static volatile bool s_chirp;
@@ -250,6 +257,7 @@ static void take(rec_stats_t *st, const int16_t *pcm)
 static bool record(bool barge_in, size_t *held, char *why, size_t cap)
 {
     sagwa_sfx_stop_all();
+    s_last_user_us = esp_timer_get_time();
     muse_state_set_mode(MUSE_MODE_LISTENING);
     muse_state_set_reply("", 0.0f);   /* a new turn: the last reply goes */
     muse_state_set_progress(0);
@@ -344,6 +352,36 @@ static bool record(bool barge_in, size_t *held, char *why, size_t cap)
 static void go_idle(const char *caption);
 
 /*
+ * The sound (and body language) a message gets: a soft mrrow if you're
+ * talking together, an insistent meow if it's important, a chirp otherwise.
+ */
+static void announce(bool incoming, const char *text)
+{
+    int64_t now = esp_timer_get_time();
+    int64_t last = s_last_user_us;
+    if (incoming && s_last_incoming_us > 0 && now - s_last_incoming_us < THREAD_US) {
+        last = now;   /* one of a run of messages: a conversation going on */
+    }
+    sagwa_notify_kind_t kind = sagwa_notify_classify(!incoming, text, now, last);
+    ESP_LOGI(TAG, "%s message: %s", incoming ? "incoming" : "reply", sagwa_notify_kind_name(kind));
+    if (incoming) {
+        s_last_incoming_us = now;
+    }
+    sagwa_clips_cue(kind);
+    switch (kind) {
+    case SAGWA_NOTIFY_URGENT:
+        sagwa_sfx_trigger_repeat(SAGWA_SFX_URGENT, URGENT_REPEATS, URGENT_GAP_MS);
+        break;
+    case SAGWA_NOTIFY_CHAT:
+        sagwa_sfx_trigger(SAGWA_SFX_CHAT);
+        break;
+    default:
+        sagwa_sfx_trigger(SAGWA_SFX_NOTIFY);
+        break;
+    }
+}
+
+/*
  * Plays Hatch's reply as it arrives, with its text as the caption. Returns
  * true if interrupted by a new press. *delivered: the VM has the note.
  */
@@ -360,9 +398,11 @@ static bool hatch_reply(bool *delivered, bool incoming)
     static const int16_t silence[MUSE_AUDIO_CHUNK];
     char text[96];
     static char page[MUSE_CAPTION_MAX];
-    bool done = false, speaking = false, replied = false;
+    bool done = false, speaking = false, replied = false, announced = false;
     size_t played = 0;
     int64_t t0 = esp_timer_get_time();
+    static EXT_RAM_BSS_ATTR char full[MUSE_REPLY_MAX];
+    full[0] = '\0';
     *delivered = false;
     for (;;) {
         muse_hatch_ev_t ev;
@@ -413,9 +453,6 @@ static bool hatch_reply(bool *delivered, bool incoming)
             if (!speaking) {
                 speaking = true;
                 muse_state_set_mode(MUSE_MODE_SPEAKING);
-                if (!incoming) {
-                    sagwa_sfx_trigger(SAGWA_SFX_MEOW_REPLY);
-                }
                 ESP_LOGI(TAG, "reply audio after %.2fs", (esp_timer_get_time() - t0) / 1e6);
             }
             int16_t sfx_buf[MUSE_AUDIO_CHUNK];
@@ -451,11 +488,18 @@ static bool hatch_reply(bool *delivered, bool incoming)
             muse_state_set_caption("%s", page);
         }
         /* And the whole reply, for screens that scroll through it */
-        static EXT_RAM_BSS_ATTR char full[MUSE_REPLY_MAX];
         float pos;
         if ((speaking || replied || incoming) && muse_hatch_turn_text(played, full, sizeof(full), &pos)) {
             muse_state_set_reply(full, pos);
         }
+        /* Her sound for it, once there's text to tell what kind of message it is */
+        if (!announced && (replied || speaking || (incoming && (full[0] || esp_timer_get_time() - t0 > ANNOUNCE_WAIT_US)))) {
+            announced = true;
+            announce(incoming, full);
+        }
+    }
+    if (!incoming) {
+        s_last_user_us = esp_timer_get_time();
     }
     muse_state_set_level(0);
     ESP_LOGI(TAG, "muse reply: %.2fs of audio, %.2fs total", (double)played / MUSE_AUDIO_RATE,
@@ -828,7 +872,7 @@ static void voice_task(void *arg)
 {
     bool pending_down = false;
     muse_audio_selftest();
-    sagwa_sfx_trigger(SAGWA_SFX_MEOW_ATTENTION);
+    sagwa_sfx_trigger(SAGWA_SFX_HAPPY_TRILL);
     for (;;) {
         bool wake = false;
         if (!pending_down) {
@@ -838,7 +882,6 @@ static void voice_task(void *arg)
                 muse_wifi_power(MUSE_WIFI_FULL);
                 muse_state_set_asleep(false);
                 muse_state_poke();
-                sagwa_sfx_trigger(SAGWA_SFX_MEOW_ATTENTION);
                 bool delivered = false;
                 pending_down = hatch_reply(&delivered, true);
                 pre_reset();
@@ -880,7 +923,7 @@ static void voice_task(void *arg)
             }
             if (s_chirp) {
                 s_chirp = false;
-                sagwa_sfx_play_now(SAGWA_SFX_MEOW_REPLY);
+                sagwa_sfx_play_now(SAGWA_SFX_NOTIFY);
                 pre_reset();
             }
             if (s_mp3test) {
@@ -911,7 +954,6 @@ static void voice_task(void *arg)
                 muse_wifi_power(MUSE_WIFI_FULL);
                 muse_state_set_asleep(false);
                 muse_state_poke();
-                sagwa_sfx_trigger(SAGWA_SFX_MEOW_ATTENTION);
                 bool delivered = false;
                 pending_down = hatch_reply(&delivered, true);
                 pre_reset();
@@ -925,6 +967,7 @@ static void voice_task(void *arg)
                 continue;
             }
             muse_state_poke();
+            sagwa_sfx_noticed();   /* any press answers a call for attention */
             if (ev.type != MUSE_PTT_DOWN) {
                 continue;
             }

@@ -46,6 +46,7 @@ set(GADGET_SRCS
     "pairing_signer_policy.c"
     "pairing_transcript.c"
     "factory_test.c"
+    "sagwa_update.c"
 )
 
 set(GADGET_REQUIRES
