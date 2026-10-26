@@ -433,6 +433,7 @@ static int check_once(void)
     manifest_t m;
     if (!fetch_manifest(&m)) return RETRY_S;
     s_healthy = true;
+    ESP_LOGI(TAG, "stack left after the manifest: %u bytes", (unsigned)uxTaskGetStackHighWaterMark(NULL));
 
     const char *running = running_version();
     bool fw = version_newer(m.version, running);
@@ -467,8 +468,9 @@ static int check_once(void)
     if (fw) {
         say("Descargando la nueva version...");
         s_ota_result = -1;
-        ota_start(RELEASES "sagwa-cores3.bin", false, on_ota, NULL);
-        while (s_ota_result < 0) vTaskDelay(pdMS_TO_TICKS(500));
+        /* Here on this task: by now there's no internal RAM for ota_start's own */
+        ota_run(RELEASES "sagwa-cores3.bin", false, on_ota, NULL);
+        ESP_LOGI(TAG, "stack left after the download: %u bytes", (unsigned)uxTaskGetStackHighWaterMark(NULL));
         if (s_ota_result != OTA_RESULT_APPLIED) {
             config_erase_key(KEY_TO);
             sagwa_sfx_trigger(SAGWA_SFX_STARTLE);
@@ -523,8 +525,10 @@ static void update_task(void *arg)
 
 void sagwa_update_start(void)
 {
-    /* Internal RAM for the stack: TLS, and flash writes, which can't run from PSRAM stacks */
-    if (xTaskCreate(update_task, "sagwa_update", 10240, NULL, 3, NULL) != pdPASS) {
+    /* Internal RAM for the stack, taken at boot while there is some: TLS, and
+     * the firmware download (ota_run) with its flash writes, which can't run
+     * from a PSRAM stack */
+    if (xTaskCreate(update_task, "sagwa_update", 14336, NULL, 3, NULL) != pdPASS) {
         ESP_LOGE(TAG, "could not start the update task");
     }
 }

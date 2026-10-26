@@ -211,11 +211,11 @@ void ota_verify_forget(void) {
     config_erase_key(OTA_VERIFY_KEY);
 }
 
-// Streaming OTA on a dedicated task (callers are often on the WS event-handler
-// or BLE-host thread, which must not block). Reads the incoming descriptor,
-// applies the version gate, then downloads/verifies/installs and reboots.
-static void ota_task(void *arg) {
-    ota_ctx_t *ctx = (ota_ctx_t *)arg;
+// Streaming OTA (callers of ota_start are often on the WS event-handler or
+// BLE-host thread, which must not block, so it runs on a task of its own).
+// Reads the incoming descriptor, applies the version gate, then
+// downloads/verifies/installs and reboots. Returns only if it didn't install.
+static void ota_install(ota_ctx_t *ctx) {
     char running[sizeof(esp_app_get_description()->version) + 1];
     memcpy(running, esp_app_get_description()->version, sizeof(running) - 1);
     running[sizeof(running) - 1] = '\0';
@@ -327,10 +327,26 @@ static void ota_task(void *arg) {
     esp_restart();
 
 done:
+    return;
+}
+
+static void ota_task(void *arg) {
+    ota_ctx_t *ctx = (ota_ctx_t *)arg;
+    ota_install(ctx);
     free(ctx->url);
     free(ctx);
     stack_monitor_record(NULL);
     vTaskDelete(NULL);
+}
+
+void ota_run(const char *url, bool force, ota_status_cb cb, void *user) {
+    ota_ctx_t ctx = {
+        .url = (char *)url,
+        .force = force,
+        .cb = cb,
+        .user = user,
+    };
+    ota_install(&ctx);
 }
 
 void ota_start(const char *url, bool force, ota_status_cb cb, void *user) {
@@ -372,6 +388,10 @@ bool ota_verify_recorded_for_running(void) {
 }
 
 void ota_verify_forget(void) {
+}
+
+void ota_run(const char *url, bool force, ota_status_cb cb, void *user) {
+    ota_start(url, force, cb, user);
 }
 
 void ota_start(const char *url, bool force, ota_status_cb cb, void *user) {

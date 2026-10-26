@@ -48,6 +48,11 @@ bool ota_is_enabled(void);
 // without starting a download or task; force cannot override this setting.
 void ota_start(const char *url, bool force, ota_status_cb cb, void *user);
 
+// The same, on the calling task, for one with no other work and a stack of its
+// own in internal RAM (>= 12 KB: TLS and flash writes) when there is no room
+// left for another. Returns only if it didn't install (after `cb`).
+void ota_run(const char *url, bool force, ota_status_cb cb, void *user);
+
 // Before an update switches the boot partition, ota_start records the image it
 // installed (its partition and ELF SHA-256, in NVS), so the boot that follows
 // can tell its own update from an image another tool installed. Whether that
