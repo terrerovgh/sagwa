@@ -129,6 +129,8 @@ Sagwa updates herself from GitHub releases (see [ARCHITECTURE.md](ARCHITECTURE.m
   - `CONFIG_SAGWA_UPDATE_INTERVAL_MIN`: minutes between checks (default 180).
   - `CONFIG_SAGWA_UPDATE_REPO`: the `owner/name` she updates from.
   - `CONFIG_SAGWA_TZ`: your POSIX time zone, so her day and night follow your clock (default `UTC0`; for example `CST6CDT,M3.2.0,M11.1.0` or `CET-1CEST,M3.5.0,M10.5.0/3`).
+- **microSD card (optional)**: format it **FAT32** (exFAT and NTFS aren't supported by ESP-IDF; on macOS, Disk Utility > Erase > "MS-DOS (FAT)"). Sagwa keeps `/sagwa/cache/` (weather) and `/sagwa/update/` (downloads staged during an update, cleared once it succeeds) on it. Settings > Sagwa shows the free space, or "Not FAT32".
+- **Offline info**: tap Sagwa twice. The time zone is taken from the weather service (by your IP's location) unless you set `CONFIG_SAGWA_TZ`.
 - **Sounds**: the cat sounds are generated from `sagwa/sounds/` with `python3 sagwa/tools/make_sfx.py` (needs `numpy` and `imageio-ffmpeg`); add `--wav DIR` to listen to every take.
 
 ---

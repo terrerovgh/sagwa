@@ -15,7 +15,9 @@
  */
 
 #include "muse_settings_ui.h"
+#include "sagwa_offline.h"
 #include "sagwa_stats.h"
+#include "sagwa_store.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1339,6 +1341,7 @@ static const struct {
 #define SAGWA_TIME_ROWS (int)(sizeof(SAGWA_TIMES) / sizeof(SAGWA_TIMES[0]))
 #define SAGWA_COUNT_ROWS (int)(sizeof(SAGWA_COUNTS) / sizeof(SAGWA_COUNTS[0]))
 static lv_obj_t *s_sagwa_time_vals[SAGWA_TIME_ROWS], *s_sagwa_count_vals[SAGWA_COUNT_ROWS];
+static lv_obj_t *s_sagwa_version, *s_sagwa_latest, *s_sagwa_update_state, *s_sagwa_sd, *s_sagwa_weather;
 static int64_t s_sagwa_shown_us;
 
 /* "45 s", "12 min", "3 h 05" */
@@ -1353,10 +1356,31 @@ static void fmt_secs(char *out, size_t cap, uint32_t s)
     }
 }
 
+static void on_sagwa_update(lv_event_t *e)
+{
+    (void)e;
+    sagwa_update_status_set(NULL, "Checking...", true);
+    sagwa_update_request();
+}
+
+static void on_sagwa_offline(lv_event_t *e)
+{
+    (void)e;
+    sagwa_offline_show();
+}
+
 static void build_sagwa_page(lv_obj_t *tile)
 {
     lv_obj_t *list;
     s_sagwa = page(tile, "SAGWA", true, &list);
+    s_sagwa_version = info_row(list, "Version");
+    s_sagwa_latest = info_row(list, "Latest on GitHub");
+    s_sagwa_update_state = info_row(list, "Update");
+    button(list, LV_SYMBOL_REFRESH "  Check for updates", COLOR_ACCENT, on_sagwa_update, NULL);
+    s_sagwa_sd = info_row(list, "microSD");
+    s_sagwa_weather = info_row(list, "Weather");
+    button(list, LV_SYMBOL_EYE_OPEN "  Offline info", COLOR_ACCENT, on_sagwa_offline, NULL);
+    note(list, "Tap Sagwa twice for the time, her sensors and the weather, even offline.");
     note(list, "Since power on  /  all time");
     for (int i = 0; i < SAGWA_TIME_ROWS; i++) {
         s_sagwa_time_vals[i] = info_row(list, SAGWA_TIMES[i].name);
@@ -1376,6 +1400,27 @@ static void tick_sagwa(void)
         return;
     }
     s_sagwa_shown_us = now;
+    char line[80];
+    snprintf(line, sizeof(line), "v%s", esp_app_get_description()->version);
+    set_text(s_sagwa_version, line);
+    sagwa_update_status_t up;
+    sagwa_update_status_get(&up);
+    set_text(s_sagwa_latest, up.latest[0] ? (snprintf(line, sizeof(line), "v%s", up.latest), line) : "-");
+    set_text(s_sagwa_update_state, up.state[0] ? up.state : "-");
+    uint64_t sd_total, sd_free;
+    if (sagwa_store_space(&sd_total, &sd_free)) {
+        snprintf(line, sizeof(line), "%.1f / %.1f GB free", (double)sd_free / 1e9, (double)sd_total / 1e9);
+    } else {
+        strlcpy(line, sagwa_store_card_unformatted() ? "Not FAT32" : "No card", sizeof(line));
+    }
+    set_text(s_sagwa_sd, line);
+    sagwa_weather_t w;
+    if (sagwa_offline_weather(&w)) {
+        snprintf(line, sizeof(line), "%.0f C %s", (double)w.temp_c, sagwa_offline_weather_text(w.code));
+    } else {
+        strlcpy(line, "Not yet", sizeof(line));
+    }
+    set_text(s_sagwa_weather, line);
     sagwa_stats_t session, total;
     sagwa_stats_get(&session, &total);
     char a[16], b[16], buf[40];
@@ -1690,7 +1735,7 @@ static void tick_home(void)
     }
 #endif
 
-    snprintf(buf, sizeof(buf), "Muse %s  -  %s", esp_app_get_description()->version,
+    snprintf(buf, sizeof(buf), "Sagwa v%s  -  Muse SDK %s\n%s", esp_app_get_description()->version, MUSE_SDK_VERSION,
              w.state == MUSE_WIFI_CONNECTED ? w.ip : "offline");
     set_text(s_about, buf);
 }

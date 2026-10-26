@@ -33,7 +33,10 @@
 #include "muse_audio.h"
 #include "muse_mem.h"
 #include "muse_pmu.h"
+#include "cores3_rtc.h"
 #include "cores3_sensors.h"
+#include "sagwa_offline.h"
+#include "sagwa_store.h"
 
 #define PMU_KEY_EVERY 2         /* poll the PMU over I2C every 20 ms */
 
@@ -53,6 +56,7 @@ static esp_err_t init(void)
         s_pmu = true;
     }
     cores3_sensors_init(bsp_i2c_get_handle());
+    cores3_rtc_init(bsp_i2c_get_handle());   /* the time, even with no internet */
     return ESP_OK;
 }
 
@@ -74,6 +78,9 @@ static lv_display_t *display_start(lv_indev_t **touch)
         return NULL;
     }
     *touch = bsp_display_get_input_dev();
+    /* The microSD shares the display's SPI bus: mount it now the bus is up */
+    sagwa_store_init();
+    sagwa_offline_init();
     return *touch ? disp : NULL;
 }
 

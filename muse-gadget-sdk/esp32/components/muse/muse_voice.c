@@ -38,6 +38,7 @@
 #include "muse_state.h"
 #include "muse_wifi.h"
 #include "sagwa_notify.h"
+#include "sagwa_offline.h"
 #include "sagwa_sfx.h"
 
 static const char *TAG = "muse_voice";
@@ -862,7 +863,13 @@ static bool can_record(void)
     }
 #endif
     if (!ready && !s_rec) {
-        go_idle(not_ready_reason());
+        if (!muse_wifi_connected()) {
+            /* No internet: what she can tell you on her own instead */
+            muse_state_set_mode(MUSE_MODE_IDLE);
+            sagwa_offline_show();
+        } else {
+            go_idle(not_ready_reason());
+        }
         return false;
     }
     return true;

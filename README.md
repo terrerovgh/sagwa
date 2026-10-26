@@ -22,6 +22,8 @@ Combining real-time video animation graph playback, reactive feline acoustic voc
   Sagwa reads each message before she announces it (`sagwa_notify.c`): a soft *mrrow* when you are chatting with her, a short bright chirp for an ordinary notification, and a loud insistent double meow for something important ("urgente", "recordatorio", "!!"...), repeated until you notice her.
 - **Lifelike Moods and Decisions**:
   Energy, sleepiness (the clock and the room light), boredom and contentment drive what she does on her own: when she naps, sits, stretches, plays in bouts, grooms or calls out. She avoids repeating herself, wakes when the lights go on, jumps at a sudden hand, and keeps her balance on a tilted desk.
+- **Works Offline**:
+  Tap Sagwa twice (or press to talk with no internet) and she shows the time and date, her sensors (temperature, light) and the weather she fetched last time she was online, no Muse needed. The clock survives restarts on the CoreS3's battery-backed RTC; the time zone and weather come from your rough location by IP. A FAT32 microSD card gives her storage for caches and update downloads.
 - **Updates Herself from GitHub**:
   Every push to `main` is built and released by GitHub Actions. Sagwa checks for new releases, tells you on screen before she updates (touch her to wait), installs the firmware and new animations, and tells you when she is done.
 - **Interactive Proximity Petting**:
@@ -149,6 +151,8 @@ Sagwa keeps herself up to date from this repository's [releases](https://github.
 1. Push to `main`. The **Sagwa release** workflow (`.github/workflows/release.yml`) builds and signs the firmware as `v1.0.<run>`, and publishes it with the animation pack and a `manifest.json`.
 2. Within a few hours (every 3 h by default), Sagwa sees the new release. Once nobody is talking with her, she chirps and shows *"Hay una version nueva de mi..."* with a 30-second countdown. Touch her to put it off for 10 minutes.
 3. She downloads and verifies the update, restarts, and greets you with a happy trill: *"Ya me actualice! v1.0.4 -> v1.0.5"*.
+
+You can also check now from **Settings > Sagwa > Check for updates**, which shows the running version (beside the Muse SDK version on the settings home), the latest release and what the updater is doing. After a successful update she clears the downloads staged for it.
 
 The firmware already on your board must include the updater, so flash it once by hand (`./flash.sh`) after pulling this change. Options (time zone, check interval, turning it off) are in [INSTALL.md](INSTALL.md#automatic-updates).
 

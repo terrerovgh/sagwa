@@ -212,7 +212,16 @@ The sensors are her senses: being moved gets her up (a hard jolt startles her fi
 5. Clips: the player stops, the pack is streamed into the partition and checked against the manifest's SHA-256. Firmware: `ota.c` downloads it into the other OTA slot and checks its signature. Then she restarts.
 6. On the next boot she trills and says "Ya me actualice! vX -> vY" (or that it failed, if the bootloader rolled the image back). The image is kept once it has reached GitHub again (or the Muse control connection), else the bootloader reverts it after 5 minutes.
 
-Set `CONFIG_SAGWA_AUTO_UPDATE=n` to turn this off.
+Set `CONFIG_SAGWA_AUTO_UPDATE=n` to turn this off. **Settings > Sagwa > Check for updates** wakes the updater to check at once and, if there's a newer release, install it straight away (no quiet-moment wait or countdown). With a microSD card, a new clip pack is downloaded and SHA-checked on the card first, while she keeps playing, and only then copied into the partition; the staged files are deleted once the boot after the update reports success (and at any boot with no update pending).
+
+---
+
+## Offline (`sagwa_offline.c`, `sagwa_store.c`, `cores3_rtc.c`)
+
+- **Storage**: the microSD (FAT32) is mounted at `/sdcard` on the display's SPI bus; Sagwa uses `/sdcard/sagwa/cache/` and `/sdcard/sagwa/update/`. Writes go through a temporary file and a rename. Without a card everything falls back to RAM and NVS.
+- **Clock**: SNTP sets it online; each sync is written to the BM8563 RTC (I2C 0x51, UTC), which sets the clock at the next boot, internet or not.
+- **Weather**: every hour online, the update task finds the rough location by IP (ip-api.com, remembered in NVS) and fetches current conditions and a 3-day forecast from Open-Meteo (no key). It's kept in RAM and on the card. The response's UTC offset becomes the time zone unless `CONFIG_SAGWA_TZ` is set.
+- **The card**: a double tap on Sagwa, or a press to talk when there's no Wi-Fi and nothing can be recorded, shows the time and date, the device's temperature and light, and the weather (with its age) in her bubble for 12 s.
 
 ---
 

@@ -45,6 +45,7 @@
 #include "muse_state.h"
 #include "muse_text.h"
 #include "muse_wifi.h"
+#include "sagwa_offline.h"
 #include "sagwa_sfx.h"
 #if CONFIG_MUSE_VIDEO
 #include "muse_video.h"
@@ -406,6 +407,17 @@ static void build_button_icons(lv_obj_t *face)
 static void on_canvas_clicked(lv_event_t *e)
 {
     (void)e;
+    /* Two taps: what she knows without the internet (time, sensors, weather) */
+    static int64_t last_us;
+    int64_t now = esp_timer_get_time();
+    if (now - last_us < 450000) {
+        last_us = 0;
+        muse_state_poke();
+        sagwa_sfx_noticed();
+        sagwa_offline_show();
+        return;
+    }
+    last_us = now;
     muse_state_make_happy();
     muse_state_poke();
     sagwa_sfx_pet_pulse();

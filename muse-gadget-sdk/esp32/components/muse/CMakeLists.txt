@@ -44,6 +44,9 @@ if(CONFIG_MUSE_ENABLED)
         "muse_ble.c"
         "sagwa_sfx.c"
         "sagwa_notify.c"
+        "sagwa_offline.c"
+        "sagwa_store.c"
+        "cores3_rtc.c"
         "muse_thumbs.c"
         "sagwa_stats.c"
         "cores3_sensors.c")

@@ -9,6 +9,7 @@
 #if CONFIG_SAGWA_AUTO_UPDATE
 
 #include <inttypes.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,8 +32,14 @@
 #include "config_store.h"
 #include "muse_state.h"
 #include "ota.h"
+#include "sagwa_offline.h"
 #include "sagwa_sfx.h"
+#include "sagwa_store.h"
 #include "wifi_mgr.h"
+
+#if CONFIG_MUSE_BOARD_M5STACK_CORES3
+#include "cores3_rtc.h"
+#endif
 
 static const char *TAG = "link.sagwa_update";
 
@@ -47,7 +54,10 @@ static const char *TAG = "link.sagwa_update";
 #define COUNTDOWN_S 30
 #define POSTPONE_S (10 * 60)       /* touched during the countdown */
 #define MIN_BATTERY_PCT 30
-#define MANIFEST_MAX 2048
+#define MANIFEST_MAX 4096        /* also the weather's JSON */
+#define WEATHER_EVERY_S (60 * 60)
+#define WEATHER_RETRY_S (15 * 60)
+#define STAGED_CLIPS "update/sagwa_clips.bin"
 #define HTTP_TIMEOUT_MS 30000
 #define ERASE_STEP (64 * 1024)
 
@@ -56,6 +66,8 @@ static const char *TAG = "link.sagwa_update";
 #define KEY_FROM "sgw_upd_from"
 #define KEY_TO "sgw_upd_to"
 #define KEY_NOTES "sgw_upd_notes"
+#define KEY_TZ "sgw_tz"          /* the time zone the weather service gave */
+#define KEY_GEO "sgw_geo"        /* "lat,lon,place" from IP geolocation */
 
 typedef struct {
     char version[32];
@@ -151,6 +163,9 @@ static void report_last_update(void)
                      notes);
         }
         sagwa_sfx_trigger(SAGWA_SFX_HAPPY_TRILL);
+        /* It took: the downloads staged for it can go */
+        sagwa_store_clear("update");
+        ESP_LOGI(TAG, "cleaned up after the update");
     } else {
         ESP_LOGW(TAG, "update to %s didn't take: running %s", to, running_version());
         snprintf(msg, sizeof(msg), "La actualizacion a v%s fallo. Sigo en v%s.", to, running_version());
@@ -204,21 +219,30 @@ static void copy_str(cJSON *root, const char *key, char *out, size_t cap)
     strlcpy(out, v ? v : "", cap);
 }
 
-static bool fetch_manifest(manifest_t *m)
+/* A small GET (JSON) into buf, NUL-terminated */
+static bool http_get(const char *url, char *buf, size_t cap)
 {
-    static char buf[MANIFEST_MAX];
-    body_t body = { .buf = buf, .cap = sizeof(buf) };
+    body_t body = { .buf = buf, .cap = cap };
     buf[0] = '\0';
-    esp_http_client_config_t cfg = http_config(RELEASES "manifest.json", on_manifest_data, &body);
+    esp_http_client_config_t cfg = http_config(url, on_manifest_data, &body);
     esp_http_client_handle_t c = esp_http_client_init(&cfg);
     if (!c) return false;
     esp_err_t err = esp_http_client_perform(c);
     int status = esp_http_client_get_status_code(c);
     esp_http_client_cleanup(c);
     if (err != ESP_OK || status != 200 || body.overflow) {
-        ESP_LOGW(TAG, "manifest: %s, HTTP %d%s", esp_err_to_name(err), status, body.overflow ? ", too big" : "");
+        ESP_LOGW(TAG, "%s: %s, HTTP %d%s", url, esp_err_to_name(err), status, body.overflow ? ", too big" : "");
         return false;
     }
+    return true;
+}
+
+static char s_buf[MANIFEST_MAX];
+
+static bool fetch_manifest(manifest_t *m)
+{
+    char *buf = s_buf;
+    if (!http_get(RELEASES "manifest.json", buf, sizeof(s_buf))) return false;
     cJSON *root = cJSON_Parse(buf);
     if (!root) {
         ESP_LOGW(TAG, "manifest: not JSON");
@@ -295,6 +319,7 @@ static bool clips_sha_now(uint32_t size, char out[65])
 
 typedef struct {
     const esp_partition_t *part;
+    FILE *f;                  /* staging on the microSD instead of the partition */
     uint32_t want, written, erased;
     mbedtls_md_context_t md;
     bool failed;
@@ -313,15 +338,25 @@ static esp_err_t on_clips_data(esp_http_client_event_t *evt)
         d->failed = true;
         return ESP_FAIL;
     }
-    while (d->erased < d->written + n) {
-        if (esp_partition_erase_range(d->part, d->erased, ERASE_STEP) != ESP_OK) {
+    if (d->f) {
+        if (fwrite(evt->data, 1, n, d->f) != n) {
             d->failed = true;
             return ESP_FAIL;
         }
-        d->erased += ERASE_STEP;
+    } else {
+        while (d->erased < d->written + n) {
+            if (esp_partition_erase_range(d->part, d->erased, ERASE_STEP) != ESP_OK) {
+                d->failed = true;
+                return ESP_FAIL;
+            }
+            d->erased += ERASE_STEP;
+        }
+        if (esp_partition_write(d->part, d->written, evt->data, n) != ESP_OK) {
+            d->failed = true;
+            return ESP_FAIL;
+        }
     }
-    if (esp_partition_write(d->part, d->written, evt->data, n) != ESP_OK ||
-        mbedtls_md_update(&d->md, evt->data, n) != 0) {
+    if (mbedtls_md_update(&d->md, evt->data, n) != 0) {
         d->failed = true;
         return ESP_FAIL;
     }
@@ -334,17 +369,50 @@ static esp_err_t on_clips_data(esp_http_client_event_t *evt)
     return ESP_OK;
 }
 
-/* Rewrites the clip partition from the release. Afterwards the pack in it is
- * the new one or broken (until the next try): a restart follows either way. */
-static bool download_clips(const manifest_t *m)
+/* Copies the staged, checked pack from the card into the partition */
+static bool install_staged_clips(const esp_partition_t *p, const char *path, uint32_t size)
 {
+    FILE *f = fopen(path, "rb");
+    uint8_t *chunk = malloc(4096);
+    bool ok = f && chunk && esp_partition_erase_range(p, 0, (size + ERASE_STEP - 1) / ERASE_STEP * ERASE_STEP) == ESP_OK;
+    int last_pct = -5;
+    for (uint32_t off = 0; ok && off < size; off += 4096) {
+        uint32_t n = size - off < 4096 ? size - off : 4096;
+        ok = fread(chunk, 1, n, f) == n && esp_partition_write(p, off, chunk, n) == ESP_OK;
+        int pct = (int)((uint64_t)off * 100 / size);
+        if (pct / 10 != last_pct / 10) {
+            last_pct = pct;
+            muse_state_set_caption("Instalando mis animaciones... %d%%", pct);
+        }
+    }
+    if (f) fclose(f);
+    free(chunk);
+    return ok;
+}
+
+/* Puts the release's clip pack in the partition. With a microSD card it is
+ * downloaded and checked there first (she keeps playing meanwhile) and the
+ * partition is only touched once it's good; without one it streams straight
+ * in. *touched says whether the partition changed (a restart must follow). */
+static bool download_clips(const manifest_t *m, bool *touched)
+{
+    *touched = false;
     const esp_partition_t *p = clips_partition();
     if (!p || !m->clips_size || m->clips_size > p->size || (p->size % ERASE_STEP)) {
         ESP_LOGE(TAG, "clips: no room (%" PRIu32 " bytes)", m->clips_size);
         return false;
     }
-    sagwa_clips_suspend();
+    char staged[128];
+    bool stage = sagwa_store_path(STAGED_CLIPS, staged, sizeof(staged));
     clips_dl_t d = { .part = p, .want = m->clips_size, .last_pct = -5 };
+    if (stage) {
+        d.f = fopen(staged, "wb");
+        stage = d.f != NULL;
+    }
+    if (!stage) {
+        sagwa_clips_suspend();
+        *touched = true;
+    }
     mbedtls_md_init(&d.md);
     if (mbedtls_md_setup(&d.md, mbedtls_md_info_from_type(MBEDTLS_MD_SHA256), 0) != 0 ||
         mbedtls_md_starts(&d.md) != 0) {
@@ -360,11 +428,23 @@ static bool download_clips(const manifest_t *m)
     char got[65] = "";
     if (mbedtls_md_finish(&d.md, h) == 0) hex(h, got);
     mbedtls_md_free(&d.md);
-    config_erase_key(KEY_CLIPS_SHA);
+    if (d.f) fclose(d.f);
     if (err != ESP_OK || status != 200 || d.failed || d.written != d.want || strcmp(got, m->clips_sha)) {
         ESP_LOGE(TAG, "clips: %s, HTTP %d, %" PRIu32 "/%" PRIu32 " bytes, sha %s", esp_err_to_name(err), status,
                  d.written, d.want, got);
+        if (stage) sagwa_store_clear("update");
+        if (*touched) config_erase_key(KEY_CLIPS_SHA);
         return false;
+    }
+    if (stage) {
+        ESP_LOGI(TAG, "clips: checked on the card, installing");
+        sagwa_clips_suspend();
+        *touched = true;
+        config_erase_key(KEY_CLIPS_SHA);
+        if (!install_staged_clips(p, staged, m->clips_size)) {
+            ESP_LOGE(TAG, "clips: couldn't copy them from the card");
+            return false;
+        }
     }
     char key_val[80];
     snprintf(key_val, sizeof(key_val), "%" PRIu32 ":%s", m->clips_size, got);
@@ -427,11 +507,17 @@ static bool countdown(const manifest_t *m, bool fw, bool clips)
 
 /* ---- The check ---- */
 
-/* Returns seconds until the next check */
-static int check_once(void)
+/* Returns seconds until the next check, or -1 to check again now as asked
+ * for from the settings. manual: asked for from the settings,
+ * so no waiting for a quiet moment and no countdown to put it off. */
+static int check_once(bool manual)
 {
     manifest_t m;
-    if (!fetch_manifest(&m)) return RETRY_S;
+    sagwa_update_status_set(NULL, "Checking...", true);
+    if (!fetch_manifest(&m)) {
+        sagwa_update_status_set(NULL, "Couldn't reach GitHub", false);
+        return RETRY_S;
+    }
     s_healthy = true;
     ESP_LOGI(TAG, "stack left after the manifest: %u bytes", (unsigned)uxTaskGetStackHighWaterMark(NULL));
 
@@ -439,17 +525,38 @@ static int check_once(void)
     bool fw = version_newer(m.version, running);
     char have[65] = "";
     bool clips = m.clips_sha[0] && m.clips_size && clips_sha_now(m.clips_size, have) && strcmp(have, m.clips_sha);
-    ESP_LOGI(TAG, "latest v%s, running v%s: firmware %s, clips %s", m.version, running, fw ? "newer" : "same",
-             clips ? "changed" : "same");
-    if (!fw && !clips) return CONFIG_SAGWA_UPDATE_INTERVAL_MIN * 60;
-
-    /* Wait for a quiet moment (checking back every 30 s, up to a few hours) */
-    int64_t until = esp_timer_get_time() + (int64_t)CONFIG_SAGWA_UPDATE_INTERVAL_MIN * 60 * 1000000;
-    while (!free_now()) {
-        if (esp_timer_get_time() > until) return 60;
-        vTaskDelay(pdMS_TO_TICKS(30000));
+    ESP_LOGI(TAG, "latest v%s, running v%s: firmware %s, clips %s%s", m.version, running, fw ? "newer" : "same",
+             clips ? "changed" : "same", manual ? " (asked for)" : "");
+    if (!fw && !clips) {
+        sagwa_update_status_set(m.version, "Up to date", false);
+        if (manual) say_clear_later("Ya tengo la ultima version.", 6);
+        return CONFIG_SAGWA_UPDATE_INTERVAL_MIN * 60;
     }
-    if (!countdown(&m, fw, clips)) return POSTPONE_S;
+    char state[64];
+    snprintf(state, sizeof(state), "v%s available", m.version);
+    sagwa_update_status_set(m.version, state, true);
+
+    if (manual) {
+        muse_state_set_asleep(false);
+        sagwa_sfx_trigger(SAGWA_SFX_NOTIFY);
+        char msg[MUSE_CAPTION_MAX];
+        snprintf(msg, sizeof(msg), "Me actualizo a v%s ahora mismo.%s%s", m.version, m.notes[0] ? "\n" : "", m.notes);
+        say(msg);
+        vTaskDelay(pdMS_TO_TICKS(3000));
+    } else {
+        /* Wait for a quiet moment (checking back every 30 s, up to a few hours) */
+        int64_t until = esp_timer_get_time() + (int64_t)CONFIG_SAGWA_UPDATE_INTERVAL_MIN * 60 * 1000000;
+        while (!free_now()) {
+            if (esp_timer_get_time() > until) return 60;
+            if (sagwa_update_wait_request(30000)) return -1;   /* asked for meanwhile: go now */
+        }
+        if (!countdown(&m, fw, clips)) {
+            sagwa_update_status_set(NULL, "Put off 10 min", false);
+            return POSTPONE_S;
+        }
+    }
+    snprintf(state, sizeof(state), "Installing v%s...", m.version);
+    sagwa_update_status_set(NULL, state, true);
 
     config_set_str(KEY_FROM, running);
     config_set_str(KEY_TO, fw ? m.version : running);
@@ -457,9 +564,15 @@ static int check_once(void)
 
     if (clips) {
         say("Actualizando mis animaciones...");
-        if (!download_clips(&m)) {
+        bool touched;
+        if (!download_clips(&m, &touched)) {
             config_erase_key(KEY_TO);
             sagwa_sfx_trigger(SAGWA_SFX_STARTLE);
+            sagwa_update_status_set(NULL, "Clip download failed", false);
+            if (!touched) {
+                say_clear_later("No pude bajar las animaciones nuevas. Lo intento mas tarde.", 15);
+                return RETRY_S;
+            }
             say("No pude bajar las animaciones nuevas. Reinicio y lo intento luego.");
             vTaskDelay(pdMS_TO_TICKS(5000));
             esp_restart();   /* the pack in the partition may be half written */
@@ -474,6 +587,7 @@ static int check_once(void)
         if (s_ota_result != OTA_RESULT_APPLIED) {
             config_erase_key(KEY_TO);
             sagwa_sfx_trigger(SAGWA_SFX_STARTLE);
+            sagwa_update_status_set(NULL, "Install failed", false);
             if (clips) {
                 say("La nueva version no se pudo instalar. Reinicio con las animaciones nuevas.");
                 vTaskDelay(pdMS_TO_TICKS(5000));
@@ -490,36 +604,173 @@ static int check_once(void)
     return 0;
 }
 
+/* ---- The clock ---- */
+
+static void apply_tz(void)
+{
+    char tz[24] = "";
+    /* A zone set in the build wins; otherwise the one the weather service gave */
+    if (strcmp(CONFIG_SAGWA_TZ, "UTC0") || !config_get_str(KEY_TZ, tz, sizeof(tz))) {
+        strlcpy(tz, CONFIG_SAGWA_TZ, sizeof(tz));
+    }
+    setenv("TZ", tz, 1);
+    tzset();
+}
+
+static void on_time_sync(struct timeval *tv)
+{
+    (void)tv;
+    ESP_LOGI(TAG, "clock synced");
+#if CONFIG_MUSE_BOARD_M5STACK_CORES3
+    cores3_rtc_save_now();   /* so she knows the time after a restart offline */
+#endif
+}
+
 static void start_sntp(void)
 {
     if (s_sntp) return;
     s_sntp = true;
-    setenv("TZ", CONFIG_SAGWA_TZ, 1);
-    tzset();
     esp_sntp_config_t cfg = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
+    cfg.sync_cb = on_time_sync;
     if (esp_netif_sntp_init(&cfg) != ESP_OK) {
         ESP_LOGW(TAG, "SNTP didn't start");
     }
 }
 
+/* ---- The weather, kept for when she's offline ---- */
+
+/* Where she is, roughly, from her IP address; remembered */
+static bool locate(float *lat, float *lon, char *place, size_t cap)
+{
+    static bool fresh;   /* looked up once per boot, in case she moved */
+    char geo[96];
+    if (fresh && config_get_str(KEY_GEO, geo, sizeof(geo))) {
+        char *a = strchr(geo, ','), *b = a ? strchr(a + 1, ',') : NULL;
+        if (a && b) {
+            *lat = strtof(geo, NULL);
+            *lon = strtof(a + 1, NULL);
+            strlcpy(place, b + 1, cap);
+            return true;
+        }
+    }
+    /* Plain HTTP: ip-api's free tier has no TLS, and a rough place isn't a secret */
+    if (!http_get("http://ip-api.com/json/?fields=status,lat,lon,city", s_buf, sizeof(s_buf))) return false;
+    cJSON *root = cJSON_Parse(s_buf);
+    cJSON *la = cJSON_GetObjectItem(root, "lat"), *lo = cJSON_GetObjectItem(root, "lon");
+    const char *city = cJSON_GetStringValue(cJSON_GetObjectItem(root, "city"));
+    bool ok = cJSON_IsNumber(la) && cJSON_IsNumber(lo);
+    if (ok) {
+        *lat = (float)la->valuedouble;
+        *lon = (float)lo->valuedouble;
+        strlcpy(place, city ? city : "", cap);
+        for (char *p = place; *p; p++) {
+            if ((unsigned char)*p > 0x7e) *p = '?';   /* the bubble's font is ASCII */
+        }
+        snprintf(geo, sizeof(geo), "%.3f,%.3f,%s", (double)*lat, (double)*lon, place);
+        config_set_str(KEY_GEO, geo);
+        fresh = true;
+    }
+    cJSON_Delete(root);
+    return ok;
+}
+
+static bool fetch_weather(void)
+{
+    float lat, lon;
+    sagwa_weather_t w = { 0 };
+    if (!locate(&lat, &lon, w.place, sizeof(w.place))) return false;
+    char url[320];
+    snprintf(url, sizeof(url),
+             "https://api.open-meteo.com/v1/forecast?latitude=%.3f&longitude=%.3f"
+             "&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min"
+             "&timezone=auto&forecast_days=3",
+             (double)lat, (double)lon);
+    if (!http_get(url, s_buf, sizeof(s_buf))) return false;
+    cJSON *root = cJSON_Parse(s_buf);
+    cJSON *cur = cJSON_GetObjectItem(root, "current"), *daily = cJSON_GetObjectItem(root, "daily");
+    cJSON *t = cJSON_GetObjectItem(cur, "temperature_2m"), *code = cJSON_GetObjectItem(cur, "weather_code");
+    cJSON *off = cJSON_GetObjectItem(root, "utc_offset_seconds");
+    bool ok = cJSON_IsNumber(t) && cJSON_IsNumber(code) && daily;
+    if (ok) {
+        w.fetched = time(NULL);
+        w.temp_c = (float)t->valuedouble;
+        w.code = code->valueint;
+        cJSON *mx = cJSON_GetObjectItem(daily, "temperature_2m_max"), *mn = cJSON_GetObjectItem(daily, "temperature_2m_min");
+        cJSON *dc = cJSON_GetObjectItem(daily, "weather_code");
+        for (int i = 0; i < 3; i++) {
+            cJSON *a = cJSON_GetArrayItem(mx, i), *b = cJSON_GetArrayItem(mn, i), *c = cJSON_GetArrayItem(dc, i);
+            w.max_c[i] = cJSON_IsNumber(a) ? (float)a->valuedouble : NAN;
+            w.min_c[i] = cJSON_IsNumber(b) ? (float)b->valuedouble : NAN;
+            w.day_code[i] = cJSON_IsNumber(c) ? c->valueint : 0;
+        }
+        if (cJSON_IsNumber(off)) {
+            /* Her day follows the local clock: POSIX TZ from the offset (west is positive) */
+            int o = off->valueint;
+            w.utc_offset_s = o;
+            int h = abs(o) / 3600, mnt = abs(o) % 3600 / 60;
+            char tz[24];
+            if (mnt) snprintf(tz, sizeof(tz), "SGW%s%d:%02d", o > 0 ? "-" : "", h, mnt);
+            else snprintf(tz, sizeof(tz), "SGW%s%d", o > 0 ? "-" : "", h);
+            char was[24] = "";
+            config_get_str(KEY_TZ, was, sizeof(was));
+            if (strcmp(was, tz)) {
+                config_set_str(KEY_TZ, tz);
+                apply_tz();
+                ESP_LOGI(TAG, "time zone from the weather service: %s", tz);
+            }
+        }
+        sagwa_offline_set_weather(&w);
+        ESP_LOGI(TAG, "weather for %s: %.1f C, %s", w.place, (double)w.temp_c, sagwa_offline_weather_text(w.code));
+    }
+    cJSON_Delete(root);
+    return ok;
+}
+
+/* ---- The task ---- */
+
 static void update_task(void *arg)
 {
     (void)arg;
+    apply_tz();   /* before the first look at the clock, even offline */
     bool reported = false;
     char to[32];
-    int wait = config_get_str(KEY_TO, to, sizeof(to)) ? VERIFY_CHECK_S : FIRST_CHECK_S;
+    int64_t now = esp_timer_get_time();
+    int64_t next_check = now + (int64_t)(config_get_str(KEY_TO, to, sizeof(to)) ? VERIFY_CHECK_S : FIRST_CHECK_S) * 1000000;
+    int64_t next_weather = now + 30LL * 1000000;
+    if (!config_get_str(KEY_TO, to, sizeof(to))) {
+        sagwa_store_clear("update");   /* nothing pending: anything left there is stale */
+    }
     for (;;) {
-        while (!wifi_mgr_is_connected()) vTaskDelay(pdMS_TO_TICKS(5000));
+        if (!wifi_mgr_is_connected()) {
+            if (sagwa_update_wait_request(5000)) {
+                sagwa_update_status_set(NULL, "No internet", false);
+            }
+            continue;
+        }
         start_sntp();
         if (!reported) {
             reported = true;
             vTaskDelay(pdMS_TO_TICKS(8000));   /* her start-up trill first */
             report_last_update();
         }
-        vTaskDelay(pdMS_TO_TICKS(wait * 1000));
-        if (!wifi_mgr_is_connected()) continue;
-        wait = check_once();
-        if (wait >= 600) wait += (int)(esp_random() % (2 * JITTER_S)) - JITTER_S;
+        now = esp_timer_get_time();
+        int64_t next = next_check < next_weather ? next_check : next_weather;
+        bool manual = next > now && sagwa_update_wait_request((uint32_t)((next - now) / 1000));
+        if (!wifi_mgr_is_connected()) {
+            if (manual) sagwa_update_status_set(NULL, "No internet", false);
+            continue;
+        }
+        now = esp_timer_get_time();
+        if (manual || now >= next_check) {
+            int wait = check_once(manual);
+            if (wait < 0) wait = check_once(true);
+            if (wait >= 600) wait += (int)(esp_random() % (2 * JITTER_S)) - JITTER_S;
+            next_check = esp_timer_get_time() + (int64_t)wait * 1000000;
+        }
+        if (esp_timer_get_time() >= next_weather) {
+            bool ok = fetch_weather();
+            next_weather = esp_timer_get_time() + (int64_t)(ok ? WEATHER_EVERY_S : WEATHER_RETRY_S) * 1000000;
+        }
     }
 }
 
