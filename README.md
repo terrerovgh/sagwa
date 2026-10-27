@@ -1,6 +1,8 @@
 <div align="center">
 
-<img src="docs/media/sagwa-cores3.webp" width="760" alt="A 3D M5Stack CoreS3 turning gently in the light while Sagwa, a Siamese cat, meows, stands up, walks and sits back down on its screen">
+<img src="docs/media/sagwa-cores3.webp" width="520" alt="A 3D M5Stack CoreS3 turning all the way round while Sagwa, a Siamese cat, meows, stands up, walks and sits back down on its screen">
+
+<sub><a href="docs/media/cores3.stl">Turn the CoreS3 yourself in GitHub's 3D viewer</a> &nbsp;·&nbsp; <a href="docs/media/sagwa-cores3.png">Still image</a></sub>
 
 # Sagwa
 

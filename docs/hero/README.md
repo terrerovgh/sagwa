@@ -9,5 +9,6 @@ python3 docs/hero/server.py 8765          # serves this folder, saves POSTed fra
 ```
 
 `index.html` alone (no `capture`) previews the loop in real time; `?stills=4.5,9` renders a few
-stills. The frames in `out/` are then joined into `docs/media/sagwa-cores3.webp` (1200x800, 20 fps,
-rounded corners) with Pillow. Needs Pillow, numpy and imageio-ffmpeg, like `sagwa/tools/pack_clips.py`.
+stills and `?stl` writes the model as `out/cores3.stl` (`docs/media/cores3.stl`, which GitHub shows
+in its 3D viewer). The frames in `out/` (1000x1000, transparent, 20 fps, one full turn) are then
+joined into `docs/media/sagwa-cores3.webp` with Pillow; frame 6 is `docs/media/sagwa-cores3.png`. Needs Pillow, numpy and imageio-ffmpeg, like `sagwa/tools/pack_clips.py`.
