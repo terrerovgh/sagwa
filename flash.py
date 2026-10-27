@@ -14,16 +14,25 @@ Options:
     --app-only            Flash only the main firmware binary (0x20000)
     --clips-only          Flash only the Sagwa animation clips pack (0x830000)
     --erase-all           Erase entire flash before writing
-    --bin-dir DIR         Directory containing the binary files (default: bin/)
+    --bin-dir DIR         Flash the binaries in DIR instead of downloading them
+    --release TAG         Download this release (e.g. v1.0.5) instead of the latest
     -h, --help            Show this help message and exit
+
+The binaries come from the GitHub releases of terrerovgh/sagwa and are cached
+in bin/. A bin/ you filled yourself (sagwa/tools/make_release.py does after a
+build) is flashed as it is.
 """
 
 import argparse
 import glob
+import json
 import os
 import shutil
 import subprocess
 import sys
+import urllib.request
+
+REPO = "terrerovgh/sagwa"
 
 # Default flash layout for M5Stack CoreS3 (16MB SPI Flash)
 FLASH_PARTS = [
@@ -33,6 +42,32 @@ FLASH_PARTS = [
     (0x020000, "sagwa-cores3.bin", "Sagwa CoreS3 Application Firmware"),
     (0x830000, "sagwa_clips.bin", "Sagwa 22-Clip Animation Pack (7.8MB)"),
 ]
+
+def download_release(bin_dir, tag=None):
+    """Fetch the release's binaries into bin_dir; returns the release tag."""
+    api = f"https://api.github.com/repos/{REPO}/releases/" + (f"tags/{tag}" if tag else "latest")
+    req = urllib.request.Request(api, headers={"Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        release = json.load(r)
+    assets = {a["name"]: a["browser_download_url"] for a in release.get("assets", [])}
+    missing = [name for _, name, _ in FLASH_PARTS if name not in assets]
+    if missing:
+        raise RuntimeError(f"release {release['tag_name']} has no {', '.join(missing)}")
+    os.makedirs(bin_dir, exist_ok=True)
+    stamp = os.path.join(bin_dir, "RELEASE")
+    if (os.path.isfile(stamp) and open(stamp).read().strip() == release["tag_name"]
+            and all(os.path.isfile(os.path.join(bin_dir, n)) for _, n, _ in FLASH_PARTS)):
+        print(f"[*] Using {release['tag_name']}, already in {bin_dir}")
+        return release["tag_name"]
+    for _, name, _ in FLASH_PARTS:
+        print(f"[*] Downloading {name} ({release['tag_name']})")
+        tmp = os.path.join(bin_dir, name + ".part")
+        with urllib.request.urlopen(assets[name], timeout=120) as r, open(tmp, "wb") as f:
+            shutil.copyfileobj(r, f)
+        os.replace(tmp, os.path.join(bin_dir, name))
+    with open(stamp, "w") as f:
+        f.write(release["tag_name"] + "\n")
+    return release["tag_name"]
 
 def find_esptool():
     """Locate the esptool executable or module."""
@@ -112,11 +147,8 @@ def main():
     parser.add_argument("--app-only", action="store_true", help="Flash only the firmware binary (0x20000)")
     parser.add_argument("--clips-only", action="store_true", help="Flash only the animation pack (0x830000)")
     parser.add_argument("--erase-all", action="store_true", help="Erase entire flash before writing")
-    parser.add_argument(
-        "--bin-dir",
-        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "bin"),
-        help="Path to directory containing binaries (default: bin/)"
-    )
+    parser.add_argument("--bin-dir", help="Flash the binaries in this directory instead of downloading them")
+    parser.add_argument("--release", help="Release tag to download (default: the latest)")
 
     args = parser.parse_args()
 
@@ -161,12 +193,22 @@ def main():
                     print("Invalid selection.")
                     sys.exit(1)
 
+    # 3. Get the binaries: the latest release unless told otherwise
+    bin_dir = os.path.abspath(args.bin_dir or os.path.join(os.path.dirname(os.path.abspath(__file__)), "bin"))
+    if not args.bin_dir:
+        try:
+            download_release(bin_dir, args.release)
+        except Exception as e:
+            if all(os.path.isfile(os.path.join(bin_dir, n)) for _, n, _ in FLASH_PARTS) and not args.release:
+                print(f"[!] Could not download the latest release ({e}); flashing the copy in {bin_dir}")
+            else:
+                print(f"\n[!] Error: could not download the release: {e}")
+                sys.exit(1)
+
     print(f"[*] Target Port: {port}")
     print(f"[*] Baud Rate:   {args.baud}")
-    print(f"[*] Binary Dir:  {args.bin_dir}")
+    print(f"[*] Binary Dir:  {bin_dir}")
 
-    # 3. Check binary files
-    bin_dir = os.path.abspath(args.bin_dir)
     if not os.path.isdir(bin_dir):
         print(f"\n[!] Error: Binary directory not found at: {bin_dir}")
         sys.exit(1)

@@ -1,173 +1,244 @@
-# Sagwa — Interactive Desktop Feline Companion for M5Stack CoreS3
+<div align="center">
 
-[![Target](https://img.shields.io/badge/Target-ESP32--S3-blue.svg)](https://www.espressif.com/en/products/socs/esp32-s3)
-[![Framework](https://img.shields.io/badge/ESP--IDF-v6.0.1-red.svg)](https://docs.espressif.com/projects/esp-idf/en/v6.0.1/)
-[![Board](https://img.shields.io/badge/Hardware-M5Stack%20CoreS3-orange.svg)](https://docs.m5stack.com/en/core/CoreS3)
-[![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
-[![Art License](https://img.shields.io/badge/Art%20%26%20Audio-CC%20BY--SA%20%2F%20OFL-yellow.svg)](ATTRIBUTION.md)
+<img src="docs/media/sagwa-cores3.webp" width="760" alt="A 3D M5Stack CoreS3 turning gently in the light while Sagwa, a Siamese cat, meows, stands up, walks and sits back down on its screen">
 
-**Sagwa** is an expressive, interactive desktop AI feline companion running natively on the **M5Stack CoreS3** (ESP32-S3).
+# Sagwa
 
-Combining real-time video animation graph playback, reactive feline acoustic vocalizations, multi-sensor gesture interactions, and a touch-driven LVGL interface, Sagwa brings an intelligent, responsive pet to your desk.
+**A Siamese cat who lives inside your M5Stack CoreS3.**
 
----
+She naps when the room goes dark, stretches when you come back, purrs when you pet her
+and meows a different meow for every kind of message.
 
-## Features
+[![Latest release](https://img.shields.io/github/v/release/terrerovgh/sagwa?style=flat-square&label=release&color=c8a27c)](https://github.com/terrerovgh/sagwa/releases/latest)
+[![Build](https://img.shields.io/github/actions/workflow/status/terrerovgh/sagwa/release.yml?branch=main&style=flat-square&label=build)](https://github.com/terrerovgh/sagwa/actions/workflows/release.yml)
+[![Hardware](https://img.shields.io/badge/M5Stack-CoreS3-5b4033?style=flat-square)](https://docs.m5stack.com/en/core/CoreS3)
+[![ESP-IDF](https://img.shields.io/badge/ESP--IDF-v6.0.1-6fb7e9?style=flat-square)](https://docs.espressif.com/projects/esp-idf/en/v6.0.1/)
+[![License](https://img.shields.io/badge/license-Apache%202.0-3a3d42?style=flat-square)](LICENSE)
 
-- **Real-Time Video Animation Graph**:
-  Plays a directed graph of 22 video clips (MiniMax H3) seamlessly transitioning across 6 hub poses (*Sleep, Loaf, Sit, Stand, Stalk, Stretch*). Decoded on Core 0 via the ESP32-S3 ROM's hardware `TJpgDec` at 12 fps with zero cross-dissolves.
-- **Natural Feline Acoustic Engine (SFX)**:
-  Dedicated 16 kHz 16-bit PCM sound engine (`sagwa_sfx.c`) playing real cat recordings: meows, trills, chirps, yawns, hisses, hunting chatter and continuous rhythmic purring. Each kind of sound has several takes with a slight random pitch, so she never sounds exactly the same twice.
-- **A Different Meow for Every Kind of Message**:
-  Sagwa reads each message before she announces it (`sagwa_notify.c`): a soft *mrrow* when you are chatting with her, a short bright chirp for an ordinary notification, and a loud insistent double meow for something important ("urgente", "recordatorio", "!!"...), repeated until you notice her.
-- **Lifelike Moods and Decisions**:
-  Energy, sleepiness (the clock and the room light), boredom and contentment drive what she does on her own: when she naps, sits, stretches, plays in bouts, grooms or calls out. She avoids repeating herself, wakes when the lights go on, jumps at a sudden hand, and keeps her balance on a tilted desk.
-- **Works Offline**:
-  Tap Sagwa twice (or press to talk with no internet) and she shows the time and date, her sensors (temperature, light) and the weather she fetched last time she was online, no Muse needed. The clock survives restarts on the CoreS3's battery-backed RTC; the time zone and weather come from your rough location by IP. A FAT32 microSD card gives her storage for caches and update downloads.
-- **Updates Herself from GitHub**:
-  Every push to `main` is built and released by GitHub Actions. Sagwa checks for new releases, tells you on screen before she updates (touch her to wait), installs the firmware and new animations, and tells you when she is done.
-- **Interactive Proximity Petting**:
-  Holding your hand near the CoreS3's built-in LTR-553 proximity sensor initiates a petting response: Sagwa wakes up, makes a happy expression, and emits a soothing purr.
-- **Motion-Aware Wake**:
-  Onboard Bosch Sensortec BMI270 6-axis IMU detects taps, movement, or sustained rotation ($>40^\circ/\text{s}$) to wake Sagwa from deep sleep with an animated stretch sequence.
-- **Daily Activity Tracking (NVS Persistence)**:
-  Maintains persistent daily records in flash memory of Sagwa's wakeups, purr durations, meow counts, and device uptime, accessible from the settings dashboard.
-- **Interactive Touch UI (LVGL)**:
-  Features finger-scrollable chat reply bubbles, instant image thumbnail rendering for AI-generated images, live sensor telemetry gauges, and Wi-Fi/audio settings.
-- **Encrypted Assistant Protocol**:
-  Built on the Muse Home Link architecture, supporting encrypted Noise sessions over BLE and Wi-Fi to integrate with voice assistants and LLM agents.
+[**Download**](https://github.com/terrerovgh/sagwa/releases/latest) &nbsp;·&nbsp;
+[Install in a minute](#install-in-a-minute) &nbsp;·&nbsp;
+[What she does](#what-she-does) &nbsp;·&nbsp;
+[How she works](#how-she-works) &nbsp;·&nbsp;
+[Build from source](#build-from-source)
+
+</div>
 
 ---
 
-## Quick Start: Flash Sagwa in 1 Minute
+## Meet Sagwa
 
-No development environment or compilation is needed! Pre-built, verified firmware binaries are included in the repository inside `bin/`.
+Sagwa is not a screensaver. She is a small, opinionated cat with moods of her own, drawn in
+22 hand-directed animation clips and voiced by real cat recordings. She runs entirely on the
+CoreS3's ESP32-S3: no app, no cloud account, no subscription. Plug the board in, flash it once,
+and from then on she keeps herself up to date.
 
-### 1. Connect CoreS3
-Plug your M5Stack CoreS3 into your computer using a USB-C data cable.
+<table>
+<tr>
+<td width="33%" valign="top">
 
-### 2. Run the Flasher
+### Alive, not looping
+22 clips chain through five resting poses with no cross-fades, so every move flows into the
+next. Energy, sleepiness, boredom and contentment decide what she does and when.
 
-#### On macOS / Linux:
+</td>
+<td width="33%" valign="top">
+
+### Speaks cat
+Meows, trills, chirps, yawns, hunting chatter and a continuous purr, cut from real recordings.
+Each sound has several takes with a touch of random pitch, so she never sounds the same twice.
+
+</td>
+<td width="33%" valign="top">
+
+### Notices you
+The CoreS3's proximity, light and motion sensors are her senses. Hold a hand near her and she
+purrs; turn on the lights and she wakes; tilt the desk and she keeps her balance.
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+### Reads your messages
+A soft *mrrow* while you chat with her, a bright chirp for an ordinary notification, and an
+insistent double meow for anything urgent, repeated until you look.
+
+</td>
+<td width="33%" valign="top">
+
+### Works offline
+Tap her twice for the time, the date, the room's temperature and light, and the last weather
+she saw. The clock survives restarts on the board's battery-backed RTC.
+
+</td>
+<td width="33%" valign="top">
+
+### Updates herself
+Every release is built and signed by GitHub Actions. She checks for it on her own, asks before
+installing (touch her to wait) and tells you when she is done.
+
+</td>
+</tr>
+</table>
+
+---
+
+## What she does
+
+<div align="center">
+<table>
+<tr>
+<td align="center"><img src="docs/media/pose-sleep.png" width="140" alt="Sagwa asleep, curled up"><br><sub><b>Sleep</b></sub></td>
+<td align="center"><img src="docs/media/pose-loaf.png" width="140" alt="Sagwa loafing with paws tucked in"><br><sub><b>Loaf</b></sub></td>
+<td align="center"><img src="docs/media/pose-sit.png" width="140" alt="Sagwa sitting upright, listening"><br><sub><b>Sit</b></sub></td>
+<td align="center"><img src="docs/media/pose-stand.png" width="140" alt="Sagwa standing"><br><sub><b>Stand</b></sub></td>
+<td align="center"><img src="docs/media/pose-stalk.png" width="140" alt="Sagwa crouched low, stalking"><br><sub><b>Stalk</b></sub></td>
+</tr>
+</table>
+<sub>Her five resting poses. Every clip starts and ends on one of them.</sub>
+</div>
+
+<br>
+
+| You... | Sagwa... |
+| --- | --- |
+| hold your hand near the screen | wakes, looks happy and purrs |
+| move your hand in fast | jumps (`sit_startle`) |
+| pick her up or bump the desk | gets up; a hard jolt startles her first |
+| tilt the desk more than 20° | balances on her feet (`stand_balance`) |
+| turn the lights on after dark | wakes and, if rested, stretches |
+| turn the lights off | heads to bed soon after |
+| leave her alone for a while | grooms, naps, walks, plays in short bouts, calls out when bored |
+| send her a message | announces it with the meow its urgency deserves |
+| tap her twice | shows the time, date, sensors and weather |
+
+She also keeps a diary: wake-ups, minutes purred, meows and uptime per day, stored in flash and
+shown in **Settings > Sagwa**.
+
+---
+
+## Install in a minute
+
+You need an **[M5Stack CoreS3](https://docs.m5stack.com/en/core/CoreS3)**, a USB-C **data** cable
+and Python 3.8+ with `esptool` (`pip install esptool`).
+
 ```bash
 git clone https://github.com/terrerovgh/sagwa.git
 cd sagwa
-./flash.sh
+./flash.sh            # or: python3 flash.py   (Windows)
 ```
 
-#### On Windows / Any OS:
-```bash
-git clone https://github.com/terrerovgh/sagwa.git
-cd sagwa
-python3 flash.py
-```
+The flasher finds the board, downloads the [latest release](https://github.com/terrerovgh/sagwa/releases/latest),
+writes all five images and reboots. Sagwa wakes up on screen a few seconds later.
 
-The script automatically detects the serial port, flashes all 5 binary partitions (`bootloader`, `partition-table`, `ota_data`, `sagwa-cores3`, and `sagwa_clips.bin`), and reboots your CoreS3. Sagwa will immediately appear on screen!
+<details>
+<summary><b>What gets flashed</b></summary>
 
-> For manual flashing with `esptool` or updating individual partitions, see [INSTALL.md](INSTALL.md).
+<br>
+
+| Offset | File | Contents |
+| --- | --- | --- |
+| `0x000000` | `bootloader.bin` | ESP32-S3 second-stage bootloader |
+| `0x010000` | `partition-table.bin` | 16 MB partition layout |
+| `0x01D000` | `ota_data_initial.bin` | OTA slot selection |
+| `0x020000` | `sagwa-cores3.bin` | Sagwa's firmware (signed) |
+| `0x830000` | `sagwa_clips.bin` | The 22-clip animation pack (7.8 MB) |
+
+`flash.py --release v1.0.5` installs a specific version, `--app-only` / `--clips-only` write one
+image, and `--bin-dir DIR` flashes your own build. Manual `esptool` commands and
+troubleshooting are in [INSTALL.md](INSTALL.md).
+
+</details>
+
+**Optional:** a FAT32 microSD card gives her room for caches and for staging updates while she keeps playing.
 
 ---
 
-## Repository Structure
+## Always up to date
 
-```
-sagwa/
-├── README.md                      # Primary project documentation
-├── INSTALL.md                     # Step-by-step installation & flashing guide
-├── ARCHITECTURE.md                # System, animation & audio architecture
-├── HARDWARE.md                    # M5Stack CoreS3 peripheral & sensor specs
-├── ATTRIBUTION.md                 # Credits, provenance & asset licenses
-├── flash.py                       # Automated cross-platform flasher script
-├── flash.sh                       # 1-step flash launcher for macOS / Linux
-├── bin/                           # Ready-to-flash binary images
-│   ├── bootloader.bin             # ESP32-S3 2nd stage bootloader (0x000000)
-│   ├── partition-table.bin        # 16 MB custom partition table (0x010000)
-│   ├── ota_data_initial.bin       # OTA slot selection data (0x01D000)
-│   ├── sagwa-cores3.bin           # Sagwa application firmware (0x020000)
-│   └── sagwa_clips.bin            # 22-clip animation pack (0x830000, 7.8 MB)
-├── muse-gadget-sdk/               # ESP32 C/C++ firmware & CoreS3 drivers
-│   └── esp32/
-│       ├── components/muse/       # Sagwa avatar, SFX, sensors, and UI
-│       │   ├── avatar/            # sagwa_clips.c, sagwa_legacy.c, muse_pixel.c
-│       │   ├── cores3_sensors.c   # LTR-553 & BMI270 sensor drivers
-│       │   ├── sagwa_sfx.c        # 16 kHz feline audio synthesizer
-│       │   ├── sagwa_stats.c      # NVS daily activity tracker
-│       │   └── muse_ui.c          # Touch UI & chat reply views
-│       ├── partitions_muse_cores3.csv
-│       └── tools/muse/board.sh    # Build and flash automation tool
-└── sagwa/                         # Asset pipeline & media sources
-    ├── clips/                     # 22 MiniMax H3 1080p video clips
-    ├── hubs/                      # 6 keyframe hub poses (sleep, loaf, sit, etc.)
-    ├── sounds/                    # Original and converted PCM cat audio
-    └── tools/pack_clips.py        # Python clip processor & JPEG packager
-```
+1. A push to `main` builds, signs and publishes a release (`v1.0.<run>`) with GitHub Actions.
+2. Every few hours (3 h by default) Sagwa checks for it. When nobody is talking to her, she
+   chirps and shows *"Hay una version nueva de mi..."* with a 30-second countdown. Touch her to
+   put it off for 10 minutes.
+3. She downloads and verifies the update, restarts, and greets you with a happy trill:
+   *"Ya me actualice! v1.0.4 -> v1.0.5"*. If anything goes wrong, the bootloader rolls back.
+
+Can't wait? **Settings > Sagwa > Check for updates** installs a newer release straight away.
+Time zone, check interval and opting out are covered in [INSTALL.md](INSTALL.md#automatic-updates).
 
 ---
 
-## Building from Source
+## How she works
 
-If you want to modify the firmware or sensor behaviors:
+```
+ LTR-553 light & proximity ─┐                 ┌─► 22-clip animation graph ─► ROM TJpgDec ─► 320×240 IPS
+ BMI270 motion             ─┼─► moods & ──────┤      (12 fps, Core 0)
+ Touch, RTC, Wi-Fi weather ─┘   decisions     └─► sound engine (16 kHz PCM) ─► speaker
+                                    ▲
+         Muse Home Link (BLE / Wi-Fi, Noise-encrypted) ─► messages, chat replies, images
+```
 
-### Requirements
-- **ESP-IDF v6.0.1** ([Setup Guide](https://docs.espressif.com/projects/esp-idf/en/v6.0.1/esp32s3/get-started/))
+- **Animation**: a directed graph of clips between five hub poses (sleep, loaf, sit, stand,
+  stalk), decoded from flash by the ESP32-S3 ROM's JPEG decoder at 12 fps on its own core.
+- **Behaviour**: moods drift with time of day, light, attention and play, and every idle choice
+  avoids the poses she has just visited, so she never paces.
+- **Sound**: a dedicated 16 kHz engine mixes takes from a bank built from real recordings.
+- **Connectivity**: built on the Muse Home Link architecture, with encrypted Noise sessions over
+  BLE and Wi-Fi for voice assistants and LLM agents.
 
-### Build & Flash Commands
+Deep dives: [ARCHITECTURE.md](ARCHITECTURE.md) (state machine, decoder, audio, flash layout,
+updater) and [HARDWARE.md](HARDWARE.md) (pinout, I²C devices, power, sensor thresholds).
+
+---
+
+## Build from source
+
+Requires [ESP-IDF v6.0.1](https://docs.espressif.com/projects/esp-idf/en/v6.0.1/esp32s3/get-started/).
+
 ```bash
-# 1. Activate ESP-IDF
 . $IDF_PATH/export.sh
-
-# 2. Navigate to firmware directory
 cd muse-gadget-sdk/esp32
-
-# 3. Build firmware for M5Stack CoreS3
 tools/muse/board.sh build cores3
-
-# 4. Flash to attached device
 tools/muse/board.sh flash cores3
 ```
 
----
+Changed a clip or a pose? `python3 sagwa/tools/pack_clips.py` repacks the animation pack
+(the release workflow does it for you on push). New sounds come from
+`python3 sagwa/tools/make_sfx.py`.
 
-## Asset Pipeline: Packaging Clips
+<details>
+<summary><b>Repository layout</b></summary>
 
-Sagwa uses 22 transition clips rendered between 6 shared poses. If you create new clips or edit hub frames:
+<br>
 
-```bash
-cd sagwa/tools
-python3 pack_clips.py
 ```
-This tool:
-1. Normalizes bounding boxes and ground lines ($y = 900$).
-2. Downsamples video to 12 fps.
-3. Smoothly blends boundary frames with exact hub poses.
-4. Generates baseline JPEGs at $240 \times 208$ pixels into `sagwa_clips.bin` ready for the flash partition at `0x830000`.
+sagwa/
+├── flash.py, flash.sh          one-step installer (downloads the latest release)
+├── sagwa/
+│   ├── clips/                  22 source animation clips
+│   ├── hubs/                   the five hub poses every clip starts and ends on
+│   ├── sounds/                 real cat recordings the sound bank is cut from
+│   └── tools/                  pack_clips.py, make_sfx.py, make_release.py
+├── muse-gadget-sdk/esp32/      the firmware (ESP-IDF project)
+│   ├── main/                   app, Wi-Fi, OTA and sagwa_update.c
+│   └── components/muse/        Sagwa's avatar, sounds, moods, sensors and UI
+├── docs/                       this README's images and the 3D render that made the hero
+└── .github/workflows/          release.yml: build, sign, publish
+```
+
+Binaries are never committed: each [release](https://github.com/terrerovgh/sagwa/releases) carries them.
+
+</details>
 
 ---
 
-## Automatic Updates
+## Credits and license
 
-Sagwa keeps herself up to date from this repository's [releases](https://github.com/terrerovgh/sagwa/releases):
+- **Code**: [Apache License 2.0](LICENSE). The firmware builds on Meta's Muse Gadget SDK (Apache 2.0).
+- **Art, sound and type**: CC BY 4.0, CC BY-SA 4.0, CC BY-SA 3.0, CC0 and SIL OFL 1.1, with full
+  provenance in [ATTRIBUTION.md](ATTRIBUTION.md).
 
-1. Push to `main`. The **Sagwa release** workflow (`.github/workflows/release.yml`) builds and signs the firmware as `v1.0.<run>`, and publishes it with the animation pack and a `manifest.json`.
-2. Within a few hours (every 3 h by default), Sagwa sees the new release. Once nobody is talking with her, she chirps and shows *"Hay una version nueva de mi..."* with a 30-second countdown. Touch her to put it off for 10 minutes.
-3. She downloads and verifies the update, restarts, and greets you with a happy trill: *"Ya me actualice! v1.0.4 -> v1.0.5"*.
-
-You can also check now from **Settings > Sagwa > Check for updates**, which shows the running version (beside the Muse SDK version on the settings home), the latest release and what the updater is doing. After a successful update she clears the downloads staged for it.
-
-The firmware already on your board must include the updater, so flash it once by hand (`./flash.sh`) after pulling this change. Options (time zone, check interval, turning it off) are in [INSTALL.md](INSTALL.md#automatic-updates).
-
----
-
-## In-Depth Documentation
-
-- [Hardware Reference (`HARDWARE.md`)](HARDWARE.md) — Pinouts, I2C bus devices, power rails, and sensor thresholds.
-- [Firmware Architecture (`ARCHITECTURE.md`)](ARCHITECTURE.md) — State machine graph, ROM TJpgDec decoder, audio pipeline, and flash layout.
-- [Installation Guide (`INSTALL.md`)](INSTALL.md) — Complete flashing, driver installation, and troubleshooting guide.
-- [Attribution & Licenses (`ATTRIBUTION.md`)](ATTRIBUTION.md) — Provenance and licenses for all art, audio, typography, and machine learning models.
-
----
-
-## License
-
-- **Firmware & Code**: Licensed under the [Apache License 2.0](LICENSE).
-- **Art, Sound & Typography**: Licensed under CC BY 4.0, CC BY-SA 4.0, CC BY-SA 3.0, and SIL Open Font License 1.1. Full details in [ATTRIBUTION.md](ATTRIBUTION.md).
+<div align="center">
+<br>
+<sub>Made for a desk that needed a cat.</sub>
+</div>

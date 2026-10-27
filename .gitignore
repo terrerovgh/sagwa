@@ -50,3 +50,10 @@ avatar_prompt.md
 
 # Release assets gathered by sagwa/tools/make_release.py
 dist/
+
+# Firmware binaries: published as GitHub release assets, downloaded by flash.py
+bin/
+
+# Hero animation render scratch (docs/hero/README.md)
+docs/hero/frames/
+docs/hero/out/

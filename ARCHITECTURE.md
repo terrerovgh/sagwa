@@ -205,7 +205,7 @@ The sensors are her senses: being moved gets her up (a hard jolt startles her fi
 
 ## Self-Update from GitHub (`main/sagwa_update.c`)
 
-1. Every push to `main` runs `.github/workflows/release.yml`: it builds the CoreS3 firmware with version `1.0.<run number>`, signs it, and publishes a release with `sagwa-cores3.bin`, `sagwa_clips.bin` and `manifest.json` (`version`, SHA-256 and size of both binaries, the commit message as notes). The binaries are also committed to `bin/`.
+1. Every push to `main` runs `.github/workflows/release.yml`: it builds the CoreS3 firmware with version `1.0.<run number>`, signs it, and publishes a release with `sagwa-cores3.bin`, `sagwa_clips.bin` and `manifest.json` (`version`, SHA-256 and size of both binaries, the commit message as notes), plus the bootloader, partition table and OTA data that `flash.py` writes on a first install. Binaries live only in releases, never in the repository.
 2. Sagwa fetches `releases/latest/download/manifest.json` 2 minutes after Wi-Fi comes up and then every `CONFIG_SAGWA_UPDATE_INTERVAL_MIN` (180) minutes, give or take 15.
 3. If the version is newer than hers, or the clip pack's SHA-256 differs from the one in her `sagwa` partition, she waits until nobody has talked with her or touched her for 2 minutes (and the battery is above 30% if she is on it).
 4. She chirps and says on screen that a new version is out, with the notes, and counts down 30 s. Touching her puts it off for 10 minutes.

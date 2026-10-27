@@ -1,0 +1,211 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Sagwa CoreS3 render</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || 1200), H = +(q.get('h') || 800);
+const FPS = +(q.get('fps') || 20);
+const CLIP_FPS = 24, CLIP_FRAMES = +(q.get('frames') || 428);
+const T = CLIP_FRAMES / CLIP_FPS;           // one loop of the clips = one loop of the motion
+const capture = q.has('capture');
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(W, H);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+// Backdrop: a warm glow behind the device fading to near black.
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+scene.background = canvasTex(W, H, (g, w, h) => {
+  g.fillStyle = '#0b0b0e'; g.fillRect(0, 0, w, h);
+  let r = g.createRadialGradient(w * 0.5, h * 0.46, 10, w * 0.5, h * 0.5, w * 0.55);
+  r.addColorStop(0, '#3a2c24'); r.addColorStop(0.45, '#1a1517'); r.addColorStop(1, '#0b0b0e');
+  g.fillStyle = r; g.fillRect(0, 0, w, h);
+  r = g.createRadialGradient(w * 0.78, h * 0.2, 0, w * 0.78, h * 0.2, w * 0.35);
+  r.addColorStop(0, 'rgba(90,140,190,0.10)'); r.addColorStop(1, 'rgba(90,140,190,0)');
+  g.fillStyle = r; g.fillRect(0, 0, w, h);
+  // fine grain so gradients don't band
+  const d = g.getImageData(0, 0, w, h);
+  for (let i = 0; i < d.data.length; i += 4) { const n = (Math.random() - 0.5) * 5; d.data[i] += n; d.data[i + 1] += n; d.data[i + 2] += n; }
+  g.putImageData(d, 0, 0);
+});
+
+const camera = new THREE.PerspectiveCamera(26, W / H, 1, 2000);
+camera.position.set(0, 12, 178);
+camera.lookAt(0, -2, 0);
+
+const key = new THREE.DirectionalLight(0xfff4ea, 1.5); key.position.set(-80, 120, 140); scene.add(key);
+const rim = new THREE.DirectionalLight(0xc4dcff, 1.9); rim.position.set(120, 60, -120); scene.add(rim);
+const rim2 = new THREE.DirectionalLight(0xffe2cc, 0.7); rim2.position.set(-140, -20, -80); scene.add(rim2);
+scene.add(new THREE.AmbientLight(0xffffff, 0.15));
+
+// ---- M5Stack CoreS3 (mm) ----------------------------------------------------
+const device = new THREE.Group(); scene.add(device);
+const shell = new THREE.MeshPhysicalMaterial({ color: 0x1d1f23, roughness: 0.42, metalness: 0.0, clearcoat: 0.4, clearcoatRoughness: 0.45, envMapIntensity: 0.55 });
+const shellBase = new THREE.MeshPhysicalMaterial({ color: 0x26282d, roughness: 0.5, metalness: 0.0, clearcoat: 0.25, clearcoatRoughness: 0.55, envMapIntensity: 0.55 });
+const black = new THREE.MeshStandardMaterial({ color: 0x050506, roughness: 0.6 });
+const glass = new THREE.MeshPhysicalMaterial({ color: 0x050507, roughness: 0.07, metalness: 0.0, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.4 });
+const metal = new THREE.MeshStandardMaterial({ color: 0xb8bcc4, roughness: 0.25, metalness: 1.0 });
+
+function add(geo, mat, x = 0, y = 0, z = 0, parent = device) {
+  const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); parent.add(m); return m;
+}
+
+// Core: 54 x 54 x 16, front glass, base module stacked behind it.
+add(new RoundedBoxGeometry(54, 54, 16, 8, 3.4), shell, 0, 0, 0);
+add(new RoundedBoxGeometry(53.2, 53.2, 1.0, 6, 3.0), black, 0, 0, -8.3);          // seam
+add(new RoundedBoxGeometry(54, 54, 13, 8, 3.4), shellBase, 0, 0, -15.3);
+add(new RoundedBoxGeometry(51.4, 51.4, 1.2, 6, 2.6), glass, 0, 0, 7.75);         // front glass
+
+// Screen: 2.0" IPS, 320 x 240
+const SCR_W = 40.8, SCR_H = 30.6, SCR_Y = -2.6;
+const scr = document.createElement('canvas'); scr.width = 640; scr.height = 480;
+const sg = scr.getContext('2d');
+const scrTex = new THREE.CanvasTexture(scr); scrTex.colorSpace = THREE.SRGBColorSpace; scrTex.anisotropy = 8;
+add(new THREE.PlaneGeometry(SCR_W, SCR_H), new THREE.MeshBasicMaterial({ map: scrTex, toneMapped: false }), 0, SCR_Y, 8.37);
+// faint backlight bleed around the panel
+add(new THREE.PlaneGeometry(SCR_W + 1.0, SCR_H + 1.0), new THREE.MeshBasicMaterial({ color: 0x0c0c10 }), 0, SCR_Y, 8.36);
+
+// Glare: a soft diagonal sheen that slides across the glass as the device turns.
+const glareTex = canvasTex(1024, 256, (g, w, h) => {
+  const l = g.createLinearGradient(0, 0, w, 0);
+  l.addColorStop(0.00, 'rgba(255,255,255,0)'); l.addColorStop(0.42, 'rgba(255,255,255,0)');
+  l.addColorStop(0.47, 'rgba(255,255,255,0.55)'); l.addColorStop(0.50, 'rgba(255,255,255,0.9)');
+  l.addColorStop(0.56, 'rgba(255,255,255,0.25)'); l.addColorStop(0.62, 'rgba(255,255,255,0)');
+  l.addColorStop(1.00, 'rgba(255,255,255,0)');
+  g.fillStyle = l; g.fillRect(0, 0, w, h);
+});
+glareTex.wrapS = glareTex.wrapT = THREE.ClampToEdgeWrapping;
+glareTex.repeat.set(0.4, 1);
+glareTex.center.set(0.5, 0.5); glareTex.rotation = -0.55;
+const glareMat = new THREE.MeshBasicMaterial({ map: glareTex, transparent: true, opacity: 0.11, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+add(new RoundedBoxGeometry(51.4, 51.4, 0.01, 2, 0.01), glareMat, 0, 0, 8.42);
+
+// Camera + proximity / light sensor above the screen
+add(new THREE.CircleGeometry(2.1, 48), new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.3, metalness: 0.6 }), 0, 19.6, 8.37);
+add(new THREE.CircleGeometry(1.25, 48), new THREE.MeshPhysicalMaterial({ color: 0x0a1020, roughness: 0.05, clearcoat: 1, envMapIntensity: 2.5 }), 0, 19.6, 8.38);
+add(new THREE.CircleGeometry(0.35, 24), new THREE.MeshBasicMaterial({ color: 0x5577aa }), 0.45, 20.0, 8.39);
+add(new RoundedBoxGeometry(3.6, 1.6, 0.1, 2, 0.7), new THREE.MeshPhysicalMaterial({ color: 0x1a0d10, roughness: 0.1, clearcoat: 1 }), -7.0, 19.6, 8.36);
+
+// Left side: USB-C and power button. Right side: red Grove port A.
+function port(w, h, depth, x, y, z, color, axis = 'x') {
+  const g = new THREE.Group(); g.position.set(x, y, z); device.add(g);
+  const frame = new THREE.Mesh(new RoundedBoxGeometry(depth, h, w, 4, Math.min(h, w) * 0.45), new THREE.MeshStandardMaterial({ color, roughness: 0.5 }));
+  g.add(frame);
+  return g;
+}
+const usb = port(9.0, 3.3, 1.0, -27.1, -9, 0.5, 0x0b0b0c);
+add(new RoundedBoxGeometry(0.6, 0.8, 6.6, 2, 0.3), metal, -27.45, -9, 0.5);
+add(new RoundedBoxGeometry(1.2, 2.6, 5.0, 3, 1.1), new THREE.MeshStandardMaterial({ color: 0x8b8f97, roughness: 0.35, metalness: 0.4 }), -27.3, 14, 1.5);
+port(8.6, 5.4, 1.0, 27.1, 6, 0, 0xd8343a);
+add(new RoundedBoxGeometry(0.4, 3.4, 6.6, 2, 0.4), black, 27.5, 6, 0);
+// Base: black Grove port B (right), blue port C (left), microSD slit
+port(8.6, 5.4, 1.0, 27.1, -6, -15.3, 0x1b1c1f);
+add(new RoundedBoxGeometry(0.4, 3.4, 6.6, 2, 0.4), black, 27.5, -6, -15.3);
+port(8.6, 5.4, 1.0, -27.1, -6, -15.3, 0x2f6fd6);
+add(new RoundedBoxGeometry(0.4, 3.4, 6.6, 2, 0.4), black, -27.5, -6, -15.3);
+add(new RoundedBoxGeometry(12, 0.9, 1.0, 2, 0.4), black, 8, 27.05, -2);
+
+// Status LED on the top edge, a soft green
+add(new THREE.SphereGeometry(0.55, 16, 16), new THREE.MeshBasicMaterial({ color: 0x55ff99, toneMapped: false }), -14, 27.1, 3);
+
+// Contact shadow on an invisible floor
+const shadowTex = canvasTex(256, 256, (g, w, h) => {
+  const r = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+  r.addColorStop(0, 'rgba(0,0,0,0.75)'); r.addColorStop(0.5, 'rgba(0,0,0,0.3)'); r.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = r; g.fillRect(0, 0, w, h);
+});
+const shadow = new THREE.Mesh(new THREE.PlaneGeometry(90, 50), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+shadow.rotation.x = -Math.PI / 2; shadow.position.set(0, -42, -6); scene.add(shadow);
+
+// Warm under-glow from the screen onto the "floor"
+const glowTex = canvasTex(256, 256, (g, w, h) => {
+  const r = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+  r.addColorStop(0, 'rgba(255,214,170,0.20)'); r.addColorStop(1, 'rgba(255,214,170,0)');
+  g.fillStyle = r; g.fillRect(0, 0, w, h);
+});
+const glow = new THREE.Mesh(new THREE.PlaneGeometry(110, 60), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+glow.rotation.x = -Math.PI / 2; glow.position.set(0, -41.8, 20); scene.add(glow);
+
+// ---- Sagwa's frames ---------------------------------------------------------
+const frames = [];
+await Promise.all(Array.from({ length: CLIP_FRAMES }, (_, i) => new Promise(res => {
+  const im = new Image(); im.onload = res; im.src = `frames/${String(i).padStart(4, '0')}.jpg`; frames[i] = im;
+})));
+
+function drawScreen(t) {
+  const f = frames[Math.floor(t * CLIP_FPS + 1e-6) % CLIP_FRAMES];
+  sg.fillStyle = '#000'; sg.fillRect(0, 0, 640, 480);
+  sg.drawImage(f, 72, 22, 552, 478);
+  // IPS black is never quite black
+  sg.fillStyle = 'rgba(14,14,18,0.35)'; sg.fillRect(0, 0, 640, 480);
+  scrTex.needsUpdate = true;
+}
+
+const TAU = Math.PI * 2, rad = THREE.MathUtils.degToRad;
+function pose(t) {
+  const p = t / T;
+  const yaw = rad(34) * Math.sin(TAU * p) + rad(5) * Math.sin(TAU * 3 * p + 0.4);
+  const pitch = rad(-5) + rad(3.5) * Math.sin(TAU * 2 * p + 0.6);
+  const roll = rad(2.2) * Math.sin(TAU * p + 1.3);
+  const lift = 2.0 * Math.sin(TAU * 4 * p);
+  device.rotation.set(pitch, yaw, roll, 'YXZ');
+  device.position.set(0, lift, 0);
+  glareTex.offset.x = 0.32 - yaw * 0.55;
+  const s = 1 - lift * 0.035;
+  shadow.scale.set(s, s, 1); shadow.material.opacity = 0.9 - lift * 0.06;
+  drawScreen(t);
+}
+
+if (q.has('stills')) {
+  for (const t of q.get('stills').split(',').map(Number)) {
+    pose(t); renderer.render(scene, camera);
+    const blob = await new Promise(r => renderer.domElement.toBlob(r, 'image/png'));
+    await fetch(`/frame/still-${t}.png`, { method: 'POST', body: blob });
+  }
+  document.title = 'done';
+} else if (capture) {
+  const N = Math.round(T * FPS);
+  for (let i = 0; i < N; i++) {
+    pose(i / FPS);
+    renderer.render(scene, camera);
+    const blob = await new Promise(r => renderer.domElement.toBlob(r, 'image/png'));
+    await fetch(`/frame/${String(i).padStart(4, '0')}.png`, { method: 'POST', body: blob });
+    document.title = `${i + 1}/${N}`;
+  }
+  document.title = 'done';
+} else {
+  const t0 = performance.now();
+  const at = q.has('t') ? +q.get('t') : null;
+  (function loop() {
+    pose(at ?? (performance.now() - t0) / 1000 % T);
+    renderer.render(scene, camera);
+    if (at === null) requestAnimationFrame(loop);
+  })();
+}
+</script>
+</body>
+</html>

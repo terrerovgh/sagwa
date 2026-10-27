@@ -7,7 +7,7 @@ This document records the provenance, licensing, and credit attribution for all 
 ## Visual Assets & Character Artwork
 
 - **Sagwa Character Reference**: The visual identity of Sagwa is based on original character reference designs.
-- **Pose Atlas (`sagwa/generated/atlas.png`)**: Generated using reference images with transparent alpha channels, composed against pure black (`#000000`) for the CoreS3 LCD screen. Character poses are standardized at 136×136 pixels without cropping ear tips or white fur contours.
+- **Pose Atlas** (earlier versions, kept in the git history): Generated using reference images with transparent alpha channels, composed against pure black (`#000000`) for the CoreS3 LCD screen.
 - **System & Status Icons**:
   - Source: **Google Noto Emoji** ([Noto Emoji Repository](https://googlefonts.github.io/noto-emoji-files/))
   - License: [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
@@ -17,7 +17,7 @@ This document records the provenance, licensing, and credit attribution for all 
 
 ## Animation Pipeline & Video Clips
 
-- **Hub Poses (`sagwa/hubs/`)**: Six key poses cropped from `sagwa/higgsfield-v1/atlas-original.png`:
+- **Hub Poses (`sagwa/hubs/`)**: Six key poses cropped from the original Higgsfield pose atlas (in the git history before v1.0.5):
   - `sleep.png`, `wake.png` (loaf), `listen.png` (sit), `idle.png` (stand), `work.png` (stalk), and `stretch.png`.
   - Rendered on a 1024×1024 canvas with uniform scale ($\times 1.45$) and standardized ground line ($y = 900$).
 - **Motion Clips (`sagwa/clips/`)**:

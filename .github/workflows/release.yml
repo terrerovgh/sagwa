@@ -1,8 +1,8 @@
 # Every push to main builds Sagwa's CoreS3 firmware and publishes it as a
-# GitHub release (v1.0.<run number>) with sagwa-cores3.bin, sagwa_clips.bin
-# and manifest.json. Sagwa checks the latest release herself and updates
-# (muse-gadget-sdk/esp32/main/sagwa_update.c). The new binaries are also
-# committed to bin/ so flash.py always flashes the latest.
+# GitHub release (v1.0.<run number>) with every binary flash.py writes and
+# the manifest.json Sagwa checks to update herself
+# (muse-gadget-sdk/esp32/main/sagwa_update.c). Binaries live only in releases;
+# the repository keeps the sources and the clip pack the firmware embeds.
 
 name: Sagwa release
 
@@ -11,8 +11,7 @@ on:
     branches: [main]
     paths-ignore:
       - "**.md"
-      - "bin/**"
-      - ".github/images/**"
+      - "docs/**"
   workflow_dispatch:
 
 permissions:
@@ -61,8 +60,7 @@ jobs:
              git diff --name-only "$before" "$GITHUB_SHA" | grep -qE '^sagwa/(clips|hubs)/|^sagwa/tools/pack_clips.py'; then
             . "$IDF_PATH/export.sh" > /dev/null
             python -m pip install -q pillow numpy imageio-ffmpeg
-            python sagwa/tools/pack_clips.py --out bin/sagwa_clips.bin
-            cp bin/sagwa_clips.bin muse-gadget-sdk/esp32/components/muse/avatar/sagwa_clips.bin
+            python sagwa/tools/pack_clips.py
           fi
 
       - name: Build
@@ -88,16 +86,19 @@ jobs:
             dist/manifest.json
             dist/sagwa-cores3.bin
             dist/sagwa_clips.bin
+            dist/bootloader.bin
+            dist/partition-table.bin
+            dist/ota_data_initial.bin
 
-      - name: Commit the binaries to bin/
+      - name: Commit a repacked clip pack
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # The version and signing key were only for this build
           git checkout -- muse-gadget-sdk/esp32/version.txt muse-gadget-sdk/esp32/dev_signing_key.pem
-          git add bin/ muse-gadget-sdk/esp32/components/muse/avatar/sagwa_clips.bin
+          git add muse-gadget-sdk/esp32/components/muse/avatar/sagwa_clips.bin
           if ! git diff --cached --quiet; then
-            git commit -m "Release v${{ steps.version.outputs.version }} binaries [skip ci]"
+            git commit -m "Release v${{ steps.version.outputs.version }} clip pack [skip ci]"
             git pull --rebase --autostash origin main
             git push origin HEAD:main
           fi

@@ -6,7 +6,7 @@ This guide provides simple, step-by-step instructions to install and run **Sagwa
 
 ## Method 1: 1-Minute Quick Flash (Recommended)
 
-No compiler or ESP-IDF setup is required! Pre-built, verified binaries are included in the repository inside `bin/`.
+No compiler or ESP-IDF setup is required. Every release on the [Releases page](https://github.com/terrerovgh/sagwa/releases) carries the pre-built, signed binaries, and the flasher downloads the latest one for you.
 
 ### Prerequisites
 1. **M5Stack CoreS3** connected to your computer with a high-quality USB-C data cable.
@@ -30,7 +30,7 @@ python3 flash.py
 
 ### What Happens Automatically:
 1. The script auto-detects your CoreS3 serial port (`/dev/cu.usbmodem*`, `/dev/ttyACM*`, or `COM*`).
-2. It verifies the 5 binary partitions in `bin/`:
+2. It downloads the latest release into `bin/` (skipped when `bin/` already holds it; `--release v1.0.5` picks another, `--bin-dir DIR` flashes your own build) and checks its 5 binaries:
    - `0x000000`: `bootloader.bin` (ESP32-S3 bootloader)
    - `0x010000`: `partition-table.bin` (Custom 16MB partition table)
    - `0x01D000`: `ota_data_initial.bin` (OTA data)
@@ -43,7 +43,7 @@ python3 flash.py
 
 ## Method 2: Manual Flashing with `esptool`
 
-If you prefer to flash using standard command-line tools:
+If you prefer to flash using standard command-line tools, download the five `.bin` files from the [latest release](https://github.com/terrerovgh/sagwa/releases/latest) into a `bin/` folder, then:
 
 ```bash
 # Replace <PORT> with your serial port (e.g., /dev/cu.usbmodem1101 or COM3)
@@ -121,8 +121,8 @@ This writes the freshly packed `sagwa_clips.bin` directly into the firmware avat
 
 Sagwa updates herself from GitHub releases (see [ARCHITECTURE.md](ARCHITECTURE.md#self-update-from-github-mainsagwa_updatec)):
 
-- **First time**: flash a build that contains the updater (`./flash.sh` with the current `bin/`, or `tools/muse/board.sh flash cores3`). From then on she updates on her own over Wi-Fi.
-- **Publishing**: every push to `main` (except changes to Markdown files or `bin/`) runs the *Sagwa release* workflow. You can also run it by hand from the Actions tab. Edited clips (`sagwa/clips/`, `sagwa/hubs/`) are repacked automatically.
+- **First time**: flash a build that contains the updater (`./flash.sh`, which fetches the latest release, or `tools/muse/board.sh flash cores3`). From then on she updates on her own over Wi-Fi.
+- **Publishing**: every push to `main` (except changes to Markdown files or `docs/`) runs the *Sagwa release* workflow. You can also run it by hand from the Actions tab. Edited clips (`sagwa/clips/`, `sagwa/hubs/`) are repacked automatically.
 - **Signing**: the board only accepts images signed with the key its firmware was built with. The workflow uses the repository's development key (`muse-gadget-sdk/esp32/dev_signing_key.pem`) unless you add your own as the `SAGWA_SIGNING_KEY` repository secret; if you do, flash one build made with that key by hand first.
 - **Settings** (`idf.py menuconfig`, *ESP32 Device SDK*):
   - `CONFIG_SAGWA_AUTO_UPDATE`: turn self-updates off.

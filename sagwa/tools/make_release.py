@@ -4,8 +4,9 @@
     make_release.py --version 1.0.12 --notes "commit message" [--build DIR] [--out DIR]
 
 Copies the CoreS3 build (firmware, bootloader, partition table, OTA data) and
-the clip pack into bin/ (what flash.py writes) and --out (the release assets),
-and writes --out/manifest.json, which main/sagwa_update.c reads:
+the clip pack into --out (the release assets, which flash.py downloads) and
+bin/ (so flash.py --bin-dir bin flashes a local build), and writes
+--out/manifest.json, which main/sagwa_update.c reads:
 
     {"version", "fw_sha256", "fw_size", "clips_sha256", "clips_size", "notes"}
 
@@ -39,19 +40,20 @@ def main():
     args = ap.parse_args()
 
     bin_dir = os.path.join(ROOT, "bin")
+    os.makedirs(bin_dir, exist_ok=True)
     os.makedirs(args.out, exist_ok=True)
     copies = {
         "sagwa-cores3.bin": os.path.join(args.build, "muse-gadget.bin"),
         "bootloader.bin": os.path.join(args.build, "bootloader", "bootloader.bin"),
         "partition-table.bin": os.path.join(args.build, "partition_table", "partition-table.bin"),
         "ota_data_initial.bin": os.path.join(args.build, "ota_data_initial.bin"),
+        # The clip pack pack_clips.py writes, beside the firmware that embeds it
+        "sagwa_clips.bin": os.path.join(ESP32, "components", "muse", "avatar", "sagwa_clips.bin"),
     }
     for name, src in copies.items():
         shutil.copyfile(src, os.path.join(bin_dir, name))
-    # The clip pack lives in bin/ (pack_clips.py writes it; flash.py flashes it)
-    clips = os.path.join(bin_dir, "sagwa_clips.bin")
-    shutil.copyfile(os.path.join(bin_dir, "sagwa-cores3.bin"), os.path.join(args.out, "sagwa-cores3.bin"))
-    shutil.copyfile(clips, os.path.join(args.out, "sagwa_clips.bin"))
+        shutil.copyfile(src, os.path.join(args.out, name))
+    clips = os.path.join(args.out, "sagwa_clips.bin")
 
     fw = os.path.join(args.out, "sagwa-cores3.bin")
     notes = " ".join(args.notes.split())[:120]
