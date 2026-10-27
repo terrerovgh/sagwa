@@ -6,6 +6,11 @@
 
 #include "sdkconfig.h"
 
+#if CONFIG_MUSE_ENABLED
+#include "sagwa_offline.h"
+#include "sagwa_store.h"
+#endif
+
 #if CONFIG_SAGWA_AUTO_UPDATE
 
 #include <inttypes.h>
@@ -339,7 +344,10 @@ static esp_err_t on_clips_data(esp_http_client_event_t *evt)
         return ESP_FAIL;
     }
     if (d->f) {
-        if (fwrite(evt->data, 1, n, d->f) != n) {
+        sagwa_store_lock();
+        size_t put = fwrite(evt->data, 1, n, d->f);
+        sagwa_store_unlock();
+        if (put != n) {
             d->failed = true;
             return ESP_FAIL;
         }
@@ -372,20 +380,29 @@ static esp_err_t on_clips_data(esp_http_client_event_t *evt)
 /* Copies the staged, checked pack from the card into the partition */
 static bool install_staged_clips(const esp_partition_t *p, const char *path, uint32_t size)
 {
+    sagwa_store_lock();
     FILE *f = fopen(path, "rb");
+    sagwa_store_unlock();
     uint8_t *chunk = malloc(4096);
     bool ok = f && chunk && esp_partition_erase_range(p, 0, (size + ERASE_STEP - 1) / ERASE_STEP * ERASE_STEP) == ESP_OK;
     int last_pct = -5;
     for (uint32_t off = 0; ok && off < size; off += 4096) {
         uint32_t n = size - off < 4096 ? size - off : 4096;
-        ok = fread(chunk, 1, n, f) == n && esp_partition_write(p, off, chunk, n) == ESP_OK;
+        sagwa_store_lock();
+        ok = fread(chunk, 1, n, f) == n;
+        sagwa_store_unlock();
+        ok = ok && esp_partition_write(p, off, chunk, n) == ESP_OK;   /* internal flash: not the shared bus */
         int pct = (int)((uint64_t)off * 100 / size);
         if (pct / 10 != last_pct / 10) {
             last_pct = pct;
             muse_state_set_caption("Instalando mis animaciones... %d%%", pct);
         }
     }
-    if (f) fclose(f);
+    if (f) {
+        sagwa_store_lock();
+        fclose(f);
+        sagwa_store_unlock();
+    }
     free(chunk);
     return ok;
 }
@@ -406,7 +423,9 @@ static bool download_clips(const manifest_t *m, bool *touched)
     bool stage = sagwa_store_path(STAGED_CLIPS, staged, sizeof(staged));
     clips_dl_t d = { .part = p, .want = m->clips_size, .last_pct = -5 };
     if (stage) {
+        sagwa_store_lock();
         d.f = fopen(staged, "wb");
+        sagwa_store_unlock();
         stage = d.f != NULL;
     }
     if (!stage) {
@@ -428,7 +447,11 @@ static bool download_clips(const manifest_t *m, bool *touched)
     char got[65] = "";
     if (mbedtls_md_finish(&d.md, h) == 0) hex(h, got);
     mbedtls_md_free(&d.md);
-    if (d.f) fclose(d.f);
+    if (d.f) {
+        sagwa_store_lock();
+        fclose(d.f);
+        sagwa_store_unlock();
+    }
     if (err != ESP_OK || status != 200 || d.failed || d.written != d.want || strcmp(got, m->clips_sha)) {
         ESP_LOGE(TAG, "clips: %s, HTTP %d, %" PRIu32 "/%" PRIu32 " bytes, sha %s", esp_err_to_name(err), status,
                  d.written, d.want, got);
@@ -782,12 +805,20 @@ void sagwa_update_start(void)
     if (xTaskCreate(update_task, "sagwa_update", 14336, NULL, 3, NULL) != pdPASS) {
         ESP_LOGE(TAG, "could not start the update task");
     }
+    /* The microSD (on the display's SPI bus, already up) takes internal RAM
+     * too, so it's mounted after the stack above has its block */
+    sagwa_store_init();
+    sagwa_offline_init();
 }
 
 #else
 
 void sagwa_update_start(void)
 {
+#if CONFIG_MUSE_ENABLED
+    sagwa_store_init();
+    sagwa_offline_init();
+#endif
 }
 
 bool sagwa_update_healthy(void)

@@ -39,10 +39,17 @@ bool sagwa_store_path(const char *rel, char *out, size_t cap);
 bool sagwa_store_write(const char *rel, const void *data, size_t len);
 size_t sagwa_store_read(const char *rel, void *buf, size_t cap);
 
+/* Exclusive use of the card's SPI bus, which the display shares: hold it
+ * around any direct stdio on files under SAGWA_STORE_ROOT (the functions
+ * here take it themselves). Recursive; briefly holds up the display. */
+void sagwa_store_lock(void);
+void sagwa_store_unlock(void);
+
 /* Removes a folder under the root and everything in it. */
 bool sagwa_store_clear(const char *rel);
 
-/* Card size and free space in bytes; false without a card. */
+/* Card size and free space in bytes, as of the last mount or clear; false
+ * without a card. */
 bool sagwa_store_space(uint64_t *total, uint64_t *free_bytes);
 
 #ifdef __cplusplus
