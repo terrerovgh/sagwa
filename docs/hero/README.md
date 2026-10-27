@@ -34,10 +34,12 @@ $R work/anim anim --res 1000 --samples 48 --frames 357    # the turn at 20 fps (
 $R work/still still --res 2000 --samples 128 --at 0       # the 3/4 front still
 $R docs/media stl                     # cores3.stl, without the ears, lying screen up
 
-python3 docs/hero/encode.py work/anim docs/media/sagwa-cores3.webp 20
-cp work/still/still.png docs/media/sagwa-cores3.png
+python3 docs/hero/encode.py work/anim docs/media/sagwa-cores3.webp 20     # ~6.8 MB
+python3 docs/hero/encode.py work/still/still.png docs/media/sagwa-cores3.png
 ```
 
 `anim` skips frames already rendered, so it can be stopped and resumed, or split with
 `--from`/`--to`. The shadow is a second, cheap pass (the device unseen but casting onto an
-invisible floor) laid under the device, so it works on light and dark pages alike.
+invisible floor) laid under the device, so it works on light and dark pages alike. `encode.py`
+clears the faint veil that pass leaves over the whole floor and smooths the shadow, which keeps
+it clean on white and keeps the WebP under 8 MB.
