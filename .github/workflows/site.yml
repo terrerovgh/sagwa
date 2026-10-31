@@ -1,5 +1,5 @@
-# Builds the documentation site in site/ and publishes it on GitHub Pages
-# (https://terrerovgh.github.io/sagwa/). The build reads every release of this
+# Builds the documentation site in site/ and publishes it on GitHub Pages at
+# https://sagwa.dev (the custom domain is set in the repository's Pages settings). The build reads every release of this
 # repository from the GitHub API, so the site always shows the latest firmware:
 # release.yml calls this workflow right after it publishes a release, and a push
 # that changes the site (or the flash layout it documents) redeploys it too.
@@ -49,7 +49,7 @@ jobs:
         run: npm run build
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          SITE_URL: https://terrerovgh.github.io/sagwa
+          SITE_URL: https://sagwa.dev
 
       - uses: actions/upload-pages-artifact@v3
         with:
