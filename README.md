@@ -18,6 +18,7 @@ and meows a different meow for every kind of message.
 [![License](https://img.shields.io/badge/license-Apache%202.0-3a3d42?style=flat-square)](LICENSE)
 
 [**Download**](https://github.com/terrerovgh/sagwa/releases/latest) &nbsp;·&nbsp;
+[**Documentation**](https://terrerovgh.github.io/sagwa/) &nbsp;·&nbsp;
 [Install in a minute](#install-in-a-minute) &nbsp;·&nbsp;
 [What she does](#what-she-does) &nbsp;·&nbsp;
 [How she works](#how-she-works) &nbsp;·&nbsp;
@@ -225,7 +226,8 @@ sagwa/
 │   ├── main/                   app, Wi-Fi, OTA and sagwa_update.c
 │   └── components/muse/        Sagwa's avatar, sounds, moods, sensors and UI
 ├── docs/                       this README's images and the 3D render that made the hero
-└── .github/workflows/          release.yml: build, sign, publish
+├── site/                       the documentation site (terrerovgh.github.io/sagwa)
+└── .github/workflows/          release.yml: build, sign, publish; site.yml: the site
 ```
 
 Binaries are never committed: each [release](https://github.com/terrerovgh/sagwa/releases) carries them.

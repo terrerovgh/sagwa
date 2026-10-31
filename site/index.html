@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#fbf7ef" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#17110e" media="(prefers-color-scheme: dark)" />
+    <script>
+      try { var theme = localStorage.getItem('sagwa-theme'); if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme } catch (e) {}
+    </script>
+    <link rel="icon" href="%BASE_URL%favicon.ico" sizes="32x32" />
+    <link rel="icon" href="%BASE_URL%brand/sagwa-mark.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="%BASE_URL%brand/apple-touch-icon.png" />
+    <link rel="manifest" href="%BASE_URL%site.webmanifest" />
+    <link rel="alternate" type="application/atom+xml" title="Sagwa releases" href="%BASE_URL%releases.xml" />
+    <!--app-head-->
+  </head>
+  <body>
+    <div id="root"><!--app-html--></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

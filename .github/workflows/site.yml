@@ -1,0 +1,66 @@
+# Builds the documentation site in site/ and publishes it on GitHub Pages
+# (https://terrerovgh.github.io/sagwa/). The build reads every release of this
+# repository from the GitHub API, so the site always shows the latest firmware:
+# release.yml calls this workflow right after it publishes a release, and a push
+# that changes the site (or the flash layout it documents) redeploys it too.
+
+name: Sagwa site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "flash.py"
+      - "muse-gadget-sdk/esp32/partitions_muse_cores3.csv"
+      - ".github/workflows/site.yml"
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SITE_URL: https://terrerovgh.github.io/sagwa
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}en/
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

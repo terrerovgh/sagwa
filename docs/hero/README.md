@@ -43,3 +43,19 @@ python3 docs/hero/encode.py work/still/still.png docs/media/sagwa-cores3.png
 invisible floor) laid under the device, so it works on light and dark pages alike. `encode.py`
 clears the faint veil that pass leaves over the whole floor and smooths the shadow, which keeps
 it clean on white and keeps the WebP under 8 MB.
+
+## The docs site's 3D model
+
+`web_model.py` is `render.py` plus what the site's interactive viewer needs: the CoreS3's
+documented internals (PCB, chips, battery) as separate named parts, a UV-mapped display panel the
+site plays Sagwa's video on, and a `glb` mode. After the steps above:
+
+```bash
+blender -b -P docs/hero/web_model.py -- work/model work/screens work/web glb
+npx @gltf-transform/cli optimize work/web/cores3.glb site/public/models/cores3.glb \
+    --compress meshopt --texture-compress webp --texture-size 1024 \
+    --join false --instance false --flatten false --palette false --simplify false
+```
+
+Keep the node names: `site/src/data/hardware.ts` maps each documented part to them.
+
