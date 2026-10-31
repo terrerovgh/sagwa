@@ -1,0 +1,156 @@
+/* Sagwa's palette comes from the logo: seal-point browns, cream fur, eye blue and a pink nose.
+   Light and dark themes redefine the same tokens; components use only tokens. */
+:root {
+  color-scheme: light;
+  --paper: #fbf7ef;
+  --paper-deep: #f3ebde;
+  --paper-raised: #ffffff;
+  --ink: #2b1e19;
+  --ink-soft: #55453d;
+  --muted: #74635a;
+  --line: #e5d9c8;
+  --line-strong: #cbbba6;
+  --accent: #2f5f86;
+  --accent-dark: #234a6a;
+  --accent-soft: #e2edf4;
+  --accent-ink: #fbf7ef;
+  --eye: #75b6d7;
+  --nose: #e7a5a2;
+  --sage: #4f8a62;
+  --sage-glow: rgb(79 138 98 / 0.16);
+  --stage: #ede4d5;
+  --stage-line: #ddd0bd;
+  --pose-stage: #ece6d6;
+  --pose-line: #cfc3ab;
+  --note: #e9f1f6;
+  --note-line: #c3d7e4;
+  --warn: #fbeee0;
+  --warn-line: #e3bd93;
+  --dark: #2b1e19;
+  --dark-soft: #3a2a23;
+  --on-dark: #f7f0e4;
+  --on-dark-soft: #d7cabb;
+  --on-dark-muted: #ab9b8c;
+  --on-dark-line: rgb(247 240 228 / 0.14);
+  --on-dark-accent: #8cc4e3;
+  --code: #1f1612;
+  --code-ink: #efe6d8;
+  --code-muted: #a8988a;
+  --overlay: rgb(28 19 15 / 0.5);
+  --shadow: rgb(43 30 25 / 0.14);
+  --header: rgb(251 247 239 / 0.92);
+  --glass: rgb(251 247 239 / 0.9);
+  --focus: rgb(47 95 134 / 0.45);
+  --radius: 0.75rem;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #17110e;
+  --paper-deep: #211915;
+  --paper-raised: #261d18;
+  --ink: #f4ece0;
+  --ink-soft: #d2c4b5;
+  --muted: #a8988a;
+  --line: #3a2d26;
+  --line-strong: #56453b;
+  --accent: #8cc4e3;
+  --accent-dark: #b3d8ee;
+  --accent-soft: #1d3142;
+  --accent-ink: #17110e;
+  --sage: #7fbf91;
+  --sage-glow: rgb(127 191 145 / 0.18);
+  --stage: #211915;
+  --stage-line: #3a2d26;
+  --pose-stage: #1f1915;
+  --pose-line: #4a3c32;
+  --note: #192833;
+  --note-line: #2c4557;
+  --warn: #2e2116;
+  --warn-line: #6e5236;
+  --dark: #0f0b09;
+  --dark-soft: #1c1511;
+  --code: #0f0b09;
+  --overlay: rgb(0 0 0 / 0.6);
+  --shadow: rgb(0 0 0 / 0.4);
+  --header: rgb(23 17 14 / 0.9);
+  --glass: rgb(33 25 21 / 0.92);
+  --focus: rgb(140 196 227 / 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #17110e;
+    --paper-deep: #211915;
+    --paper-raised: #261d18;
+    --ink: #f4ece0;
+    --ink-soft: #d2c4b5;
+    --muted: #a8988a;
+    --line: #3a2d26;
+    --line-strong: #56453b;
+    --accent: #8cc4e3;
+    --accent-dark: #b3d8ee;
+    --accent-soft: #1d3142;
+    --accent-ink: #17110e;
+    --sage: #7fbf91;
+    --sage-glow: rgb(127 191 145 / 0.18);
+    --stage: #211915;
+    --stage-line: #3a2d26;
+    --pose-stage: #1f1915;
+    --pose-line: #4a3c32;
+    --note: #192833;
+    --note-line: #2c4557;
+    --warn: #2e2116;
+    --warn-line: #6e5236;
+    --dark: #0f0b09;
+    --dark-soft: #1c1511;
+    --code: #0f0b09;
+    --overlay: rgb(0 0 0 / 0.6);
+    --shadow: rgb(0 0 0 / 0.4);
+    --header: rgb(23 17 14 / 0.9);
+    --glass: rgb(33 25 21 / 0.92);
+    --focus: rgb(140 196 227 / 0.5);
+  }
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 92px; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { color: inherit; }
+a { color: inherit; }
+img { max-width: 100%; }
+h1, h2, h3, p { margin-top: 0; }
+h1, h2, h3 { text-wrap: balance; }
+code, pre, kbd { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+::selection { background: var(--accent-soft); color: var(--accent-dark); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

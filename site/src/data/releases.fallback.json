@@ -1,0 +1,331 @@
+{
+  "repo": "terrerovgh/sagwa",
+  "generatedAt": "2026-10-30T23:40:07.418Z",
+  "latest": {
+    "tag": "v1.0.6",
+    "version": "1.0.6",
+    "name": "Sagwa v1.0.6",
+    "date": "2026-10-27T02:03:19Z",
+    "url": "https://github.com/terrerovgh/sagwa/releases/tag/v1.0.6",
+    "notes": "docs: New README with a 3D CoreS3 hero, binaries only in releases",
+    "assets": [
+      {
+        "name": "bootloader.bin",
+        "size": 21200,
+        "sha256": "f5a0aa188312b29da47716b01dde1468f0509709797fa6861b0d64c456d0bb33",
+        "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.6/bootloader.bin"
+      },
+      {
+        "name": "manifest.json",
+        "size": 314,
+        "sha256": "c571acdd6773a1107c41844cb37cbf0d32b29844c12807bcac30b506236a512c",
+        "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.6/manifest.json"
+      },
+      {
+        "name": "ota_data_initial.bin",
+        "size": 8192,
+        "sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f",
+        "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.6/ota_data_initial.bin"
+      },
+      {
+        "name": "partition-table.bin",
+        "size": 3072,
+        "sha256": "578cde901029f56c3b0e224707b12c0482259ff850eaf4d2f8f9f8e35316a6b5",
+        "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.6/partition-table.bin"
+      },
+      {
+        "name": "sagwa-cores3.bin",
+        "size": 3084288,
+        "sha256": "1206690e8ad5cd354f615f43e3ffdc96f30238ca02c1192837eaefd693e07dd7",
+        "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.6/sagwa-cores3.bin"
+      },
+      {
+        "name": "sagwa_clips.bin",
+        "size": 7297583,
+        "sha256": "3c65e9d876bfe93e0080fa6519b3942913e7e08401b2ce4a853321221c96d752",
+        "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.6/sagwa_clips.bin"
+      }
+    ],
+    "manifest": {
+      "version": "1.0.6",
+      "fw_sha256": "1206690e8ad5cd354f615f43e3ffdc96f30238ca02c1192837eaefd693e07dd7",
+      "fw_size": 3084288,
+      "clips_sha256": "3c65e9d876bfe93e0080fa6519b3942913e7e08401b2ce4a853321221c96d752",
+      "clips_size": 7297583,
+      "notes": "docs: New README with a 3D CoreS3 hero, binaries only in releases"
+    }
+  },
+  "releases": [
+    {
+      "tag": "v1.0.6",
+      "version": "1.0.6",
+      "name": "Sagwa v1.0.6",
+      "date": "2026-10-27T02:03:19Z",
+      "url": "https://github.com/terrerovgh/sagwa/releases/tag/v1.0.6",
+      "notes": "docs: New README with a 3D CoreS3 hero, binaries only in releases",
+      "assets": [
+        {
+          "name": "bootloader.bin",
+          "size": 21200,
+          "sha256": "f5a0aa188312b29da47716b01dde1468f0509709797fa6861b0d64c456d0bb33",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.6/bootloader.bin"
+        },
+        {
+          "name": "manifest.json",
+          "size": 314,
+          "sha256": "c571acdd6773a1107c41844cb37cbf0d32b29844c12807bcac30b506236a512c",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.6/manifest.json"
+        },
+        {
+          "name": "ota_data_initial.bin",
+          "size": 8192,
+          "sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.6/ota_data_initial.bin"
+        },
+        {
+          "name": "partition-table.bin",
+          "size": 3072,
+          "sha256": "578cde901029f56c3b0e224707b12c0482259ff850eaf4d2f8f9f8e35316a6b5",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.6/partition-table.bin"
+        },
+        {
+          "name": "sagwa-cores3.bin",
+          "size": 3084288,
+          "sha256": "1206690e8ad5cd354f615f43e3ffdc96f30238ca02c1192837eaefd693e07dd7",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.6/sagwa-cores3.bin"
+        },
+        {
+          "name": "sagwa_clips.bin",
+          "size": 7297583,
+          "sha256": "3c65e9d876bfe93e0080fa6519b3942913e7e08401b2ce4a853321221c96d752",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.6/sagwa_clips.bin"
+        }
+      ]
+    },
+    {
+      "tag": "v1.0.5",
+      "version": "1.0.5",
+      "name": "Sagwa v1.0.5",
+      "date": "2026-10-27T01:03:47Z",
+      "url": "https://github.com/terrerovgh/sagwa/releases/tag/v1.0.5",
+      "notes": "fix: Share the CoreS3's SPI bus between the microSD and the display",
+      "assets": [
+        {
+          "name": "manifest.json",
+          "size": 316,
+          "sha256": "25fe0d9649d8be046ab6d0f5713cf5d8e02213050ac002607a3325c8f01df665",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.5/manifest.json"
+        },
+        {
+          "name": "sagwa-cores3.bin",
+          "size": 3084288,
+          "sha256": "7ce529cdf3dc8e03f76edbffeea425aceddf99e843c74eee9ab947883e51794c",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.5/sagwa-cores3.bin"
+        },
+        {
+          "name": "sagwa_clips.bin",
+          "size": 7297583,
+          "sha256": "3c65e9d876bfe93e0080fa6519b3942913e7e08401b2ce4a853321221c96d752",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.5/sagwa_clips.bin"
+        }
+      ]
+    },
+    {
+      "tag": "v1.0.4",
+      "version": "1.0.4",
+      "name": "Sagwa v1.0.4",
+      "date": "2026-10-26T23:26:25Z",
+      "url": "https://github.com/terrerovgh/sagwa/releases/tag/v1.0.4",
+      "notes": "feat: Offline info, microSD storage, RTC clock, manual update in settings",
+      "assets": [
+        {
+          "name": "manifest.json",
+          "size": 322,
+          "sha256": "16505db4fc04600b8a5212fe2e9db7cacbc05803151a124641c10ae0b59cbc95",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.4/manifest.json"
+        },
+        {
+          "name": "sagwa-cores3.bin",
+          "size": 3084288,
+          "sha256": "9ede9c57a20843a9108a51bec8eae3aa0562ad4c81113c224d8d44fb7d4c672a",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.4/sagwa-cores3.bin"
+        },
+        {
+          "name": "sagwa_clips.bin",
+          "size": 7297583,
+          "sha256": "3c65e9d876bfe93e0080fa6519b3942913e7e08401b2ce4a853321221c96d752",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.4/sagwa_clips.bin"
+        }
+      ]
+    },
+    {
+      "tag": "v1.0.3",
+      "version": "1.0.3",
+      "name": "Sagwa v1.0.3",
+      "date": "2026-10-26T22:41:53Z",
+      "url": "https://github.com/terrerovgh/sagwa/releases/tag/v1.0.3",
+      "notes": "fix: Run Sagwa's firmware update on her own task",
+      "assets": [
+        {
+          "name": "manifest.json",
+          "size": 297,
+          "sha256": "204a8c7809244fa74961d16d0dccde0f59236d280d1625313f9ac477359dba62",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.3/manifest.json"
+        },
+        {
+          "name": "sagwa-cores3.bin",
+          "size": 3018752,
+          "sha256": "f415271ead28e25e90ba6e85f2f0f5a81b98d159a984b08cd538b477870a5c87",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.3/sagwa-cores3.bin"
+        },
+        {
+          "name": "sagwa_clips.bin",
+          "size": 7297583,
+          "sha256": "3c65e9d876bfe93e0080fa6519b3942913e7e08401b2ce4a853321221c96d752",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.3/sagwa_clips.bin"
+        }
+      ]
+    },
+    {
+      "tag": "v1.0.2",
+      "version": "1.0.2",
+      "name": "Sagwa v1.0.2",
+      "date": "2026-10-26T22:25:59Z",
+      "url": "https://github.com/terrerovgh/sagwa/releases/tag/v1.0.2",
+      "notes": "ci: Restore build-only files before committing release binaries",
+      "assets": [
+        {
+          "name": "manifest.json",
+          "size": 312,
+          "sha256": "50784c03e243fd829a150b7792ed1b46802be37ab24afa37bf2a586d0db3dc1b",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.2/manifest.json"
+        },
+        {
+          "name": "sagwa-cores3.bin",
+          "size": 3018752,
+          "sha256": "08714b52dbb13fa1d5df5795ac29f25d5a38b8f138747aba112486ecad1a2056",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.2/sagwa-cores3.bin"
+        },
+        {
+          "name": "sagwa_clips.bin",
+          "size": 7297583,
+          "sha256": "3c65e9d876bfe93e0080fa6519b3942913e7e08401b2ce4a853321221c96d752",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.2/sagwa_clips.bin"
+        }
+      ]
+    },
+    {
+      "tag": "v1.0.1",
+      "version": "1.0.1",
+      "name": "Sagwa v1.0.1",
+      "date": "2026-10-26T22:18:28Z",
+      "url": "https://github.com/terrerovgh/sagwa/releases/tag/v1.0.1",
+      "notes": "feat: Cat sounds per message kind, mood-driven behaviour, self-update from GitHub",
+      "assets": [
+        {
+          "name": "manifest.json",
+          "size": 330,
+          "sha256": "8615456a496e84491a91f4ff29165105423122887951e675786700b5486ca4dd",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.1/manifest.json"
+        },
+        {
+          "name": "sagwa-cores3.bin",
+          "size": 3018752,
+          "sha256": "4a324ebee25284f4789d740ee926356e2cee3129da6ff62d4bc0d15365c5bed0",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.1/sagwa-cores3.bin"
+        },
+        {
+          "name": "sagwa_clips.bin",
+          "size": 7297583,
+          "sha256": "3c65e9d876bfe93e0080fa6519b3942913e7e08401b2ce4a853321221c96d752",
+          "url": "https://github.com/terrerovgh/sagwa/releases/download/v1.0.1/sagwa_clips.bin"
+        }
+      ]
+    }
+  ],
+  "flashParts": [
+    {
+      "offset": "0x000000",
+      "file": "bootloader.bin",
+      "label": "ESP32-S3 2nd Stage Bootloader"
+    },
+    {
+      "offset": "0x010000",
+      "file": "partition-table.bin",
+      "label": "Custom 16MB Partition Table"
+    },
+    {
+      "offset": "0x01D000",
+      "file": "ota_data_initial.bin",
+      "label": "OTA Initial Selection Data"
+    },
+    {
+      "offset": "0x020000",
+      "file": "sagwa-cores3.bin",
+      "label": "Sagwa CoreS3 Application Firmware"
+    },
+    {
+      "offset": "0x830000",
+      "file": "sagwa_clips.bin",
+      "label": "Sagwa 22-Clip Animation Pack (7.8MB)"
+    }
+  ],
+  "partitions": [
+    {
+      "name": "nvs",
+      "type": "data",
+      "subtype": "nvs",
+      "offset": "0x011000",
+      "size": 49152
+    },
+    {
+      "name": "otadata",
+      "type": "data",
+      "subtype": "ota",
+      "offset": "0x01D000",
+      "size": 8192
+    },
+    {
+      "name": "phy_init",
+      "type": "data",
+      "subtype": "phy",
+      "offset": "0x01F000",
+      "size": 4096
+    },
+    {
+      "name": "ota_0",
+      "type": "app",
+      "subtype": "ota_0",
+      "offset": "0x020000",
+      "size": 4194304
+    },
+    {
+      "name": "ota_1",
+      "type": "app",
+      "subtype": "ota_1",
+      "offset": "0x420000",
+      "size": 4194304
+    },
+    {
+      "name": "prod_data",
+      "type": "data",
+      "subtype": "0x40",
+      "offset": "0x820000",
+      "size": 4096
+    },
+    {
+      "name": "prod_bak",
+      "type": "data",
+      "subtype": "0x41",
+      "offset": "0x821000",
+      "size": 4096
+    },
+    {
+      "name": "sagwa",
+      "type": "data",
+      "subtype": "0x50",
+      "offset": "0x830000",
+      "size": 8192000
+    }
+  ]
+}

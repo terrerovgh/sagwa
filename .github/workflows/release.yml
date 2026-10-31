@@ -3,6 +3,7 @@
 # the manifest.json Sagwa checks to update herself
 # (muse-gadget-sdk/esp32/main/sagwa_update.c). Binaries live only in releases;
 # the repository keeps the sources and the clip pack the firmware embeds.
+# Once the release is out, the documentation site is rebuilt with it (site.yml).
 
 name: Sagwa release
 
@@ -12,6 +13,8 @@ on:
     paths-ignore:
       - "**.md"
       - "docs/**"
+      - "site/**"
+      - ".github/workflows/site.yml"
   workflow_dispatch:
 
 permissions:
@@ -102,3 +105,13 @@ jobs:
             git pull --rebase --autostash origin main
             git push origin HEAD:main
           fi
+
+  # A release made with GITHUB_TOKEN triggers no other workflow, so the site is
+  # rebuilt here, from the release just published.
+  site:
+    needs: release
+    uses: ./.github/workflows/site.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
