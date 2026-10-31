@@ -14,6 +14,7 @@ on:
       - "**.md"
       - "docs/**"
       - "site/**"
+      - "CNAME"
       - ".github/workflows/site.yml"
   workflow_dispatch:
 

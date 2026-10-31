@@ -99,7 +99,7 @@ async function main() {
   ${textPath('fraunces/files/fraunces-latin-600-normal.woff', text.line1, 72, 330, 64, colors.ink, 560)}
   ${textPath('fraunces/files/fraunces-latin-600-italic.woff', text.line2, 72, 408, 64, colors.eyeDeep, 560)}
   ${textPath('ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff', text.sub, 74, 478, 26, colors.muted, 540)}
-  ${textPath('ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff', 'terrerovgh.github.io/sagwa', 74, 560, 20, colors.muted)}
+  ${textPath('ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff', 'sagwa.dev', 74, 560, 20, colors.muted)}
 </svg>`
     await writeFile(resolve(PUBLIC, `brand/og-${lang}.png`), png(svg, 1200))
   }
